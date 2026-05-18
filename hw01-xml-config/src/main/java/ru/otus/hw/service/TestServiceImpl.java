@@ -24,7 +24,7 @@ public class TestServiceImpl implements TestService {
             ioService.printFormattedLine("%d. Question: %s", numberQuestion, question.text());
             numberQuestion++;
             for (Answer answer : question.answers()) {
-                ioService.printFormattedLine("  - %s [%s]", answer.text(), answer.isCorrect() ? "✓" : "✗");
+                ioService.printFormattedLine("  - %s ", answer.text());
             }
             ioService.printLine("");
         }
