@@ -20,30 +20,52 @@ public class TestServiceImpl implements TestService {
 
     @Override
     public TestResult executeTestFor(Student student) {
-        ioService.printLine("");
-        ioService.printLineLocalized("TestService.answer.the.questions");
-        ioService.printLine("");
+        printTestHeader();
 
         List<Question> questions = questionDao.findAll();
         TestResult testResult = new TestResult(student);
-        int numberQuestion = 1;
 
-        for (Question question : questions) {
-            ioService.printFormattedLineLocalized("TestService.question", numberQuestion, question.text());
-            List<Answer> answers = question.answers();
-            for (int i = 0; i < answers.size(); i++) {
-                ioService.printFormattedLine("   %d. %s", i + 1, answers.get(i).text());
-            }
-
-            int userChoice = ioService.readIntForRangeWithPromptLocalized(1, answers.size(),
-                    "TestService.your.choice.prompt",
-                    "TestService.your.choice.error"
-            );
-            ioService.printLine("");
-            boolean isAnswerValid = answers.get(userChoice - 1).isCorrect();
-            testResult.applyAnswer(question, isAnswerValid);
-            numberQuestion++;
+        for (int i = 0; i < questions.size(); i++) {
+            processQuestion(questions.get(i), i + 1, testResult);
         }
+
         return testResult;
+    }
+
+    private void printTestHeader() {
+        ioService.printLine("");
+        ioService.printLineLocalized("TestService.answer.the.questions");
+        ioService.printLine("");
+    }
+
+    private void processQuestion(Question question, int numberQuestion, TestResult testResult) {
+        displayQuestion(question, numberQuestion);
+        int userChoice = getUserChoice(question);
+        ioService.printLine("");
+
+        boolean isCorrect = isAnswerCorrect(question, userChoice);
+        testResult.applyAnswer(question, isCorrect);
+    }
+
+    private void displayQuestion(Question question, int numberQuestion) {
+        ioService.printFormattedLineLocalized("TestService.question", numberQuestion, question.text());
+
+        List<Answer> answers = question.answers();
+        for (int i = 0; i < answers.size(); i++) {
+            ioService.printFormattedLine("   %d. %s", i + 1, answers.get(i).text());
+        }
+    }
+
+    private int getUserChoice(Question question) {
+        int maxChoice = question.answers().size();
+        return ioService.readIntForRangeWithPromptLocalized(
+                1, maxChoice,
+                "TestService.your.choice.prompt",
+                "TestService.your.choice.error"
+        );
+    }
+
+    private boolean isAnswerCorrect(Question question, int userChoice) {
+        return question.answers().get(userChoice - 1).isCorrect();
     }
 }
