@@ -1,0 +1,16 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+
+  messages:
+    baseName: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+test:
+  rightAnswersCountToPass: 8
+  locale: ru-RU
+  fileNameByLocaleTag:
+    ru-RU: questions_ru.csv
+    en-US: questions.csv
