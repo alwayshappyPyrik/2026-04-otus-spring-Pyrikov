@@ -1,0 +1,9 @@
+# Добавить сюда своих вопросов. Эту строку надо пропустить при настройке CsvToBean (withSkipLines)
+Есть ли жизнь на Марсе?;Это науке пока не известно%true|Конечно. Красные (НЛО) это с Марса. А зеленые (НЛО) с Венеры%false|Точно нет%false
+Как нужно загружать ресурс из jar в Java?;ClassLoader#geResourceAsStream или ClassPathResource#getInputStream%true|ClassLoader#geResource#getFile + FileReader%false|Wingardium Leviosa%false
+Какой предпочтительный способ реакции на исключения?;@SneakyThrow%false|e.printStackTrace()%false|Проброс дальше с предварительным оборачиванием в бизнес-исключение (например, QuestionReadException)%true|Игнорирование исключения%false
+Какая коллекция сохраняет порядок вставки и допускает значения null?;HashSet%false|LinkedHashMap%true|TreeSet%false
+Как правильно отфильтровать и собрать список с использованием Stream API?;stream.filter().collect()%true|stream.map().collect()%false|stream.forEach().collect()%false
+Как сделать переменную видимой для разных потоков без синхронизации?;static%false|final%false|volatile%true
+Как правильно обработать Optional, который может быть null?;optional.get()%false|optional.orElseThrow()%true|optional.isPresent()%false
+Какой метод используется для сравнения строк без учёта регистра?;equals()%false|compareTo()%false|equalsIgnoreCase()%true
