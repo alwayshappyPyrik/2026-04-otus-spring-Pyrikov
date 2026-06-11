@@ -16,6 +16,7 @@
         <module>hw01-xml-config</module>
         <module>hw02-annotation-config</module>
         <module>hw03-spring-boot</module>
+        <module>hw04-spring-shell</module>
     </modules>
 
     <properties>
@@ -35,6 +36,7 @@
         </checkstyle.config.url>
         <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
         <spring-boot.version>3.5.14</spring-boot.version>
+        <spring.shell.version>3.4.2</spring.shell.version>
     </properties>
 
     <dependencyManagement>
