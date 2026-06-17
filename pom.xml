@@ -17,6 +17,7 @@
         <module>hw02-annotation-config</module>
         <module>hw03-spring-boot</module>
         <module>hw04-spring-shell</module>
+        <module>hw05-jdbc</module>
     </modules>
 
     <properties>
@@ -35,7 +36,7 @@
             https://raw.githubusercontent.com/OtusTeam/Spring/master/checkstyle.xml
         </checkstyle.config.url>
         <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
-        <spring-boot.version>3.5.14</spring-boot.version>
+        <spring-boot.version>3.5.15</spring-boot.version>
         <spring.shell.version>3.4.2</spring.shell.version>
     </properties>
 
