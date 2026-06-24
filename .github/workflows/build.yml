@@ -20,4 +20,4 @@ jobs:
 
       - name: Build application
         run: |
-          mvn clean validate verify --no-transfer-progress
+          mvn verify --no-transfer-progress

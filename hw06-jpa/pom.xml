@@ -123,10 +123,6 @@
                 </dependencies>
                 <configuration>
                     <configLocation>${checkstyle.config.url}</configLocation>
-                    <excludes>
-                        **/target/generated-sources/**/*.java,
-                        **/target/generated-test-sources/**/*.java
-                    </excludes>
                 </configuration>
                 <executions>
                     <execution>
