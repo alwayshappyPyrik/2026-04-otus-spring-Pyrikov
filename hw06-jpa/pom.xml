@@ -25,6 +25,10 @@
         <checkstyle.config.url>
             https://raw.githubusercontent.com/OtusTeam/Spring/master/checkstyle.xml
         </checkstyle.config.url>
+        <checkstyle.excludes>
+            **/target/generated-sources/**/*.java,
+            **/target/generated-test-sources/**/*.java
+        </checkstyle.excludes>
     </properties>
 
     <dependencies>
@@ -123,10 +127,7 @@
                 </dependencies>
                 <configuration>
                     <configLocation>${checkstyle.config.url}</configLocation>
-                    <excludes>
-                        **/target/generated-sources/**/*.java,
-                        **/target/generated-test-sources/**/*.java
-                    </excludes>
+                    <excludes>${checkstyle.excludes}</excludes>
                 </configuration>
                 <executions>
                     <execution>
