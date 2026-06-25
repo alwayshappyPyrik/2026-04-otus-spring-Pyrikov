@@ -1,5 +1,6 @@
 --date: 2026-06-19
 --author: alwayshappypyrik
+
 create sequence comments_id_seq
     start with 1
     increment by 1;
