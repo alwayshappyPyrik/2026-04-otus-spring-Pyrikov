@@ -9,14 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.dto.BookDto;
+import ru.otus.hw.mapper.BookMapper;
 import ru.otus.hw.models.Author;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Genre;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 @DisplayName("Интеграционные тесты сервиса книг ")
 @SpringBootTest
@@ -25,6 +27,9 @@ public class BookServiceImplTest {
 
     @Autowired
     private BookService bookService;
+
+    @Autowired
+    private BookMapper bookMapper;
 
     @PersistenceContext
     private EntityManager em;
@@ -45,75 +50,108 @@ public class BookServiceImplTest {
     @Test
     @DisplayName("должен загружать книгу по id без LazyInitializationException")
     void shouldFindBookByIdWithoutLazyException() {
-        assertThatCode(() -> {
-            var optionalBookDto = bookService.findById(testBook.getId());
-            assertThat(optionalBookDto).isPresent();
+        Set<Long> genreIds = Set.of(testGenre1.getId(), testGenre2.getId());
 
-            BookDto book = optionalBookDto.get();
+        List<Genre> sortedGenres = genreIds.stream()
+                .map(id -> em.find(Genre.class, id))
+                .sorted(Comparator.comparing(Genre::getId))
+                .toList();
 
-            assertThat(book.author().fullName()).isNotNull();
-            assertThat(book.genres()).isNotEmpty();
-        }).doesNotThrowAnyException();
+        Book bookEntity = Book.builder()
+                .id(testBook.getId())
+                .title(testBook.getTitle())
+                .author(testAuthor)
+                .genres(sortedGenres)
+                .build();
+
+        BookDto expectedBookDto = bookMapper.toDto(bookEntity);
+
+        var optionalBookDto = bookService.findById(testBook.getId());
+
+        assertThat(optionalBookDto)
+                .isPresent()
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(expectedBookDto);
     }
 
     @Test
     @DisplayName("должен загружать список всех книг без LazyInitializationException")
     void shouldFindAllBooksWithoutLazyException() {
-        assertThatCode(() -> {
-            var books = bookService.findAll();
-            assertThat(books).isNotEmpty();
+        List<BookDto> expectedBooks = bookService.findAll().stream()
+                .map(dto -> bookMapper.toEntity(dto))
+                .map(bookMapper::toDto).toList();
 
-            books.forEach(book -> {
-                assertThat(book.author().fullName()).isNotNull();
-                assertThat(book.genres()).isNotEmpty();
-            });
-        }).doesNotThrowAnyException();
+        List<BookDto> actualBooks = bookService.findAll();
+
+        assertThat(actualBooks)
+                .usingRecursiveComparison()
+                .isEqualTo(expectedBooks);
     }
 
     @Test
     @DisplayName("должен вставлять новую книгу без LazyInitializationException")
     void shouldInsertNewBookWithoutLazyException() {
-        assertThatCode(() -> {
-            BookDto savedBook = bookService.insert(
-                    "newBook",
-                    testAuthor.getId(),
-                    Set.of(testGenre1.getId(), testGenre2.getId())
-            );
+        String newTitle = "newBook";
+        Set<Long> genreIds = Set.of(testGenre1.getId(), testGenre2.getId());
 
-            assertThat(savedBook.author().fullName()).isNotNull();
-            assertThat(savedBook.genres()).isNotEmpty();
-        }).doesNotThrowAnyException();
+        List<Genre> sortedGenres = genreIds.stream()
+                .map(id -> em.find(Genre.class, id))
+                .sorted(Comparator.comparing(Genre::getId))
+                .toList();
+
+        Book bookEntity = Book.builder()
+                .title(newTitle)
+                .author(testAuthor)
+                .genres(sortedGenres)
+                .build();
+
+        BookDto expected = bookMapper.toDto(bookEntity);
+
+        BookDto savedBook = bookService.insert(newTitle, testAuthor.getId(), genreIds);
+
+        assertThat(savedBook)
+                .usingRecursiveComparison()
+                .ignoringFields("id")
+                .isEqualTo(expected);
     }
 
     @Test
     @DisplayName("должен обновлять книгу без LazyInitializationException")
-    void shouldUpdateNewBookWithoutLazyException() {
+    void shouldUpdateBookWithoutLazyException() {
         long bookId = testBook.getId();
-        assertThatCode(() -> {
-            BookDto savedBook = bookService.update(
-                    bookId,
-                    "newBook",
-                    testAuthor.getId(),
-                    Set.of(testGenre1.getId(), testGenre2.getId())
-            );
+        String updatedTitle = "editedBook";
+        Set<Long> genreIds = Set.of(testGenre1.getId());
 
-            assertThat(savedBook.author().fullName()).isNotNull();
-            assertThat(savedBook.genres()).isNotEmpty();
-        }).doesNotThrowAnyException();
+        List<Genre> sortedGenres = genreIds.stream()
+                .map(id -> em.find(Genre.class, id))
+                .sorted(Comparator.comparing(Genre::getId))
+                .toList();
+
+        Book bookEntity = Book.builder()
+                .id(bookId)
+                .title(updatedTitle)
+                .author(testAuthor)
+                .genres(sortedGenres)
+                .build();
+
+        BookDto expected = bookMapper.toDto(bookEntity);
+
+        BookDto updatedBook = bookService.update(bookId, updatedTitle, testAuthor.getId(), genreIds);
+
+        assertThat(updatedBook)
+                .usingRecursiveComparison()
+                .isEqualTo(expected);
     }
 
     @Test
     @DisplayName("должен удалять книгу без LazyInitializationException")
     void shouldDeleteBookWithoutLazyException() {
         long bookId = testBook.getId();
-        assertThatCode(() -> {
-            var bookBeforeDelete = bookService.findById(bookId);
-            assertThat(bookBeforeDelete).isPresent();
 
-            bookService.deleteById(bookId);
+        bookService.deleteById(bookId);
 
-            var bookAfterDelete = bookService.findById(bookId);
-            assertThat(bookAfterDelete).isEmpty();
-        }).doesNotThrowAnyException();
+        var bookAfterDelete = bookService.findById(bookId);
+        assertThat(bookAfterDelete).isEmpty();
     }
 }

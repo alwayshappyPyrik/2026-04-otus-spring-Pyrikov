@@ -10,6 +10,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedSubgraph;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -26,6 +29,22 @@ import lombok.ToString;
 @EqualsAndHashCode(exclude = "book")
 @ToString(exclude = "book")
 @Entity
+@NamedEntityGraph(
+        name = "Comment.withBookAndAuthorAndGenres",
+        attributeNodes = {
+                @NamedAttributeNode(value = "book", subgraph = "bookSubgraph")
+        },
+        subgraphs = {
+                @NamedSubgraph(
+                        name = "bookSubgraph",
+                        type = Book.class,
+                        attributeNodes = {
+                                @NamedAttributeNode("author"),
+                                @NamedAttributeNode("genres")
+                        }
+                )
+        }
+)
 @Table(name = "comments")
 public class Comment {
     @Id

@@ -12,6 +12,8 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.NamedAttributeNode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -19,8 +21,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Fetch;
 
 import java.util.List;
 
@@ -32,6 +32,13 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"author", "genres"})
 @ToString(exclude = {"author", "genres"})
 @Entity
+@NamedEntityGraph(
+        name = "Book.withAuthorAndGenres",
+        attributeNodes = {
+                @NamedAttributeNode("author"),
+                @NamedAttributeNode("genres")
+        }
+)
 @Table(name = "books")
 public class Book {
     @Id
@@ -51,7 +58,6 @@ public class Book {
     @JoinTable(name = "books_genres",
             joinColumns = {@JoinColumn(name = "book_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "genre_id", referencedColumnName = "id")})
-    @Fetch(FetchMode.SUBSELECT)
     private List<Genre> genres;
 
     public Book(String title, Author author, List<Genre> genres) {

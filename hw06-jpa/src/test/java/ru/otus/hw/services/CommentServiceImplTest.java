@@ -9,11 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.dto.CommentDto;
+import ru.otus.hw.mapper.CommentMapper;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Comment;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 @DisplayName("Интеграционные тесты сервиса комментария ")
 @SpringBootTest
@@ -22,6 +24,9 @@ public class CommentServiceImplTest {
 
     @Autowired
     private CommentService commentService;
+
+    @Autowired
+    private CommentMapper commentMapper;
 
     @PersistenceContext
     private EntityManager em;
@@ -38,73 +43,92 @@ public class CommentServiceImplTest {
     @Test
     @DisplayName("должен загружать комментарий по id без LazyInitializationException")
     void shouldFindCommentByIdWithoutLazyException() {
-        assertThatCode(() -> {
-            var optionalCommentDto = commentService.findById(testBook.getId());
-            assertThat(optionalCommentDto).isPresent();
+        Comment commentEntity = Comment.builder()
+                .id(testComment.getId())
+                .text(testComment.getText())
+                .book(testBook)
+                .build();
 
-            CommentDto comment = optionalCommentDto.get();
+        CommentDto expectedComment = commentMapper.toDto(commentEntity);
 
-            assertThat(comment.book().author().fullName()).isNotNull();
-            assertThat(comment.book().genres()).isNotEmpty();
-        }).doesNotThrowAnyException();
+        var optionalCommentDto = commentService.findById(testComment.getId());
+
+        assertThat(optionalCommentDto)
+                .isPresent()
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(expectedComment);
     }
 
     @Test
     @DisplayName("должен загружать список всех комментариев по книжке без LazyInitializationException")
     void shouldFindAllCommentsByBookWithoutLazyException() {
-        assertThatCode(() -> {
-            var comments = commentService.findAllByBookId(testBook.getId());
-            assertThat(comments).isNotEmpty();
+        Comment commentEntity = Comment.builder()
+                .id(testComment.getId())
+                .text(testComment.getText())
+                .book(testBook)
+                .build();
 
-            comments.forEach(comment -> {
-                assertThat(comment.book().author().fullName()).isNotNull();
-                assertThat(comment.book().genres()).isNotEmpty();
-            });
-        }).doesNotThrowAnyException();
+        CommentDto expectedComment = commentMapper.toDto(commentEntity);
+        List<CommentDto> expectedComments = List.of(expectedComment);
+
+        List<CommentDto> actualComments = commentService.findAllByBookId(testBook.getId());
+
+        assertThat(actualComments)
+                .isNotEmpty()
+                .usingRecursiveComparison()
+                .isEqualTo(expectedComments);
     }
 
     @Test
     @DisplayName("должен вставлять новый комментарий без LazyInitializationException")
     void shouldInsertCommentWithoutLazyException() {
-        assertThatCode(() -> {
-            CommentDto savedComment = commentService.insert(
-                    "newComment",
-                    testBook.getId()
-            );
+        String newText = "newComment";
 
-            assertThat(savedComment.book().author().fullName()).isNotNull();
-            assertThat(savedComment.book().genres()).isNotEmpty();
-        }).doesNotThrowAnyException();
+        Comment commentToInsert = Comment.builder()
+                .text(newText)
+                .book(testBook)
+                .build();
+
+        CommentDto expectedComment = commentMapper.toDto(commentToInsert);
+
+        CommentDto savedComment = commentService.insert(newText, testBook.getId());
+
+        assertThat(savedComment)
+                .usingRecursiveComparison()
+                .ignoringFields("id")
+                .isEqualTo(expectedComment);
     }
 
     @Test
     @DisplayName("должен обновлять комментарий без LazyInitializationException")
     void shouldUpdateCommentWithoutLazyException() {
         long commentId = testComment.getId();
-        assertThatCode(() -> {
-            CommentDto updateComment = commentService.update(
-                    commentId,
-                    "editedComment",
-                    testBook.getId()
-            );
+        String updatedText = "editedComment";
 
-            assertThat(updateComment.book().author().fullName()).isNotNull();
-            assertThat(updateComment.book().genres()).isNotEmpty();
-        }).doesNotThrowAnyException();
+        Comment commentEntity = Comment.builder()
+                .id(commentId)
+                .text(updatedText)
+                .book(testBook)
+                .build();
+
+        CommentDto expectedComment = commentMapper.toDto(commentEntity);
+
+        CommentDto updatedComment = commentService.update(commentId, updatedText, testBook.getId());
+
+        assertThat(updatedComment)
+                .usingRecursiveComparison()
+                .isEqualTo(expectedComment);
     }
 
     @Test
     @DisplayName("должен удалять комментарий без LazyInitializationException")
     void shouldDeleteCommentWithoutLazyException() {
         long commentId = testComment.getId();
-        assertThatCode(() -> {
-            var commentBeforeDelete = commentService.findById(commentId);
-            assertThat(commentBeforeDelete).isPresent();
 
-            commentService.deleteById(commentId);
+        commentService.deleteById(commentId);
 
-            var commentAfterDelete = commentService.findById(commentId);
-            assertThat(commentAfterDelete).isEmpty();
-        }).doesNotThrowAnyException();
+        var commentAfterDelete = commentService.findById(commentId);
+        assertThat(commentAfterDelete).isEmpty();
     }
 }

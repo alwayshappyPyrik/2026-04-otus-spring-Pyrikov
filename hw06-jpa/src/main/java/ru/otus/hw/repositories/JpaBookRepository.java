@@ -23,8 +23,7 @@ public class JpaBookRepository implements BookRepository {
 
     @Override
     public Optional<Book> findById(long id) {
-        EntityGraph<Book> entityGraph = em.createEntityGraph(Book.class);
-        entityGraph.addAttributeNodes("author");
+        EntityGraph<?> entityGraph = em.getEntityGraph("Book.withAuthorAndGenres");
         TypedQuery<Book> query = em.createQuery(
                 "SELECT b FROM Book b " +
                     "WHERE b.id = :id",
@@ -36,8 +35,7 @@ public class JpaBookRepository implements BookRepository {
 
     @Override
     public List<Book> findAll() {
-        EntityGraph<Book> entityGraph = em.createEntityGraph(Book.class);
-        entityGraph.addAttributeNodes("author");
+        EntityGraph<?> entityGraph = em.getEntityGraph("Book.withAuthorAndGenres");
         TypedQuery<Book> query = em.createQuery(
                    "SELECT b FROM Book b",
                    Book.class);

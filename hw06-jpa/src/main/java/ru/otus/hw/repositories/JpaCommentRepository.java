@@ -22,8 +22,7 @@ public class JpaCommentRepository implements CommentRepository {
 
     @Override
     public Optional<Comment> findById(long id) {
-        EntityGraph<Comment> entityGraph = em.createEntityGraph(Comment.class);
-        entityGraph.addSubgraph("book").addAttributeNodes("author");
+        EntityGraph<?> entityGraph = em.getEntityGraph("Comment.withBookAndAuthorAndGenres");
         TypedQuery<Comment> query = em.createQuery(
                 "SELECT c FROM Comment c " +
                     "WHERE c.id = :id",
@@ -35,8 +34,7 @@ public class JpaCommentRepository implements CommentRepository {
 
     @Override
     public List<Comment> findAllByBookId(long bookId) {
-        EntityGraph<Comment> entityGraph = em.createEntityGraph(Comment.class);
-        entityGraph.addSubgraph("book").addAttributeNodes("author");
+        EntityGraph<?> entityGraph = em.getEntityGraph("Comment.withBookAndAuthorAndGenres");
         TypedQuery<Comment> query = em.createQuery(
                 "select c from Comment c " +
                     "where c.book.id = :bookId",
