@@ -2,25 +2,39 @@ package ru.otus.hw.services;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.mapper.CommentMapper;
-import ru.otus.hw.models.Book;
+import ru.otus.hw.mapper.CommentMapperImpl;
+import ru.otus.hw.mapper.BookMapperImpl;
+import ru.otus.hw.mapper.AuthorMapperImpl;
+import ru.otus.hw.mapper.GenreMapperImpl;
 import ru.otus.hw.models.Comment;
-
-import java.util.List;
+import ru.otus.hw.repositories.JpaBookRepository;
+import ru.otus.hw.repositories.JpaCommentRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.data.jpa.repository.EntityGraph.EntityGraphType.FETCH;
 
 @DisplayName("Интеграционные тесты сервиса комментария ")
-@SpringBootTest
-@Transactional
+@DataJpaTest
+@Import({CommentServiceImpl.class,
+        CommentMapperImpl.class,
+        JpaCommentRepository.class,
+        BookMapperImpl.class,
+        JpaBookRepository.class,
+        AuthorMapperImpl.class,
+        GenreMapperImpl.class})
+@Transactional(propagation = Propagation.NEVER)
 public class CommentServiceImplTest {
+
+    private static final long BOOK_ID = 1L;
+    private static final long COMMENT_ID = 1L;
 
     @Autowired
     private CommentService commentService;
@@ -31,29 +45,23 @@ public class CommentServiceImplTest {
     @PersistenceContext
     private EntityManager em;
 
-    private Book testBook;
-    private Comment testComment;
-
-    @BeforeEach
-    void setUp() {
-        testBook = em.find(Book.class, 1L);
-        testComment = em.find(Comment.class, 1L);
-    }
-
     @Test
     @DisplayName("должен загружать комментарий по id без LazyInitializationException")
     void shouldFindCommentByIdWithoutLazyException() {
-        Comment commentEntity = Comment.builder()
-                .id(testComment.getId())
-                .text(testComment.getText())
-                .book(testBook)
-                .build();
+        var entityGraph = em.getEntityGraph("Comment.withBookAndAuthorAndGenres");
+        var comment = em.createQuery(
+                        "SELECT c FROM Comment c " +
+                            "WHERE c.id = :id",
+                        Comment.class)
+                .setParameter("id", COMMENT_ID)
+                .setHint(FETCH.getKey(), entityGraph)
+                .getSingleResult();
 
-        CommentDto expectedComment = commentMapper.toDto(commentEntity);
+        var expectedComment = commentMapper.toDto(comment);
 
-        var optionalCommentDto = commentService.findById(testComment.getId());
+        var actualComment = commentService.findById(COMMENT_ID);
 
-        assertThat(optionalCommentDto)
+        assertThat(actualComment)
                 .isPresent()
                 .get()
                 .usingRecursiveComparison()
@@ -61,60 +69,80 @@ public class CommentServiceImplTest {
     }
 
     @Test
-    @DisplayName("должен загружать список всех комментариев по книжке без LazyInitializationException")
-    void shouldFindAllCommentsByBookWithoutLazyException() {
-        Comment commentEntity = Comment.builder()
-                .id(testComment.getId())
-                .text(testComment.getText())
-                .book(testBook)
-                .build();
+    @DisplayName("должен загружать все комментарии по id книги без LazyInitializationException")
+    void shouldFindAllCommentsByBookIdWithoutLazyException() {
+        var entityGraph = em.getEntityGraph("Comment.withBookAndAuthorAndGenres");
+        var comments = em.createQuery(
+                        "SELECT c FROM Comment c " +
+                            "WHERE c.book.id = :bookId",
+                        Comment.class)
+                .setParameter("bookId", BOOK_ID)
+                .setHint(FETCH.getKey(), entityGraph)
+                .getResultList();
 
-        CommentDto expectedComment = commentMapper.toDto(commentEntity);
-        List<CommentDto> expectedComments = List.of(expectedComment);
+        var expectedComments = comments.stream()
+                .map(commentMapper::toDto)
+                .toList();
 
-        List<CommentDto> actualComments = commentService.findAllByBookId(testBook.getId());
+        var actualComments = commentService.findAllByBookId(BOOK_ID);
 
         assertThat(actualComments)
-                .isNotEmpty()
                 .usingRecursiveComparison()
                 .isEqualTo(expectedComments);
     }
 
     @Test
     @DisplayName("должен вставлять новый комментарий без LazyInitializationException")
-    void shouldInsertCommentWithoutLazyException() {
-        String newText = "newComment";
+    void shouldInsertNewCommentWithoutLazyException() {
+        var text = "newComment";
 
-        Comment commentToInsert = Comment.builder()
-                .text(newText)
-                .book(testBook)
-                .build();
+        var savedComment = commentService.insert(text, BOOK_ID);
 
-        CommentDto expectedComment = commentMapper.toDto(commentToInsert);
+        assertThat(savedComment)
+                .isNotNull()
+                .matches(c -> c.id() > 0)
+                .matches(c -> c.text().equals(text))
+                .matches(c -> c.book() != null);
 
-        CommentDto savedComment = commentService.insert(newText, testBook.getId());
+        var entityGraph = em.getEntityGraph("Comment.withBookAndAuthorAndGenres");
+        var comment = em.createQuery(
+                        "SELECT c FROM Comment c " +
+                            "WHERE c.id = :id",
+                        Comment.class)
+                .setParameter("id", savedComment.id())
+                .setHint(FETCH.getKey(), entityGraph)
+                .getSingleResult();
+
+        var expectedComment = commentMapper.toDto(comment);
 
         assertThat(savedComment)
                 .usingRecursiveComparison()
-                .ignoringFields("id")
                 .isEqualTo(expectedComment);
     }
 
     @Test
     @DisplayName("должен обновлять комментарий без LazyInitializationException")
     void shouldUpdateCommentWithoutLazyException() {
-        long commentId = testComment.getId();
-        String updatedText = "editedComment";
+        var text = "editedComment";
 
-        Comment commentEntity = Comment.builder()
-                .id(commentId)
-                .text(updatedText)
-                .book(testBook)
-                .build();
+        var updatedComment = commentService.update(COMMENT_ID, text, BOOK_ID);
 
-        CommentDto expectedComment = commentMapper.toDto(commentEntity);
+        assertThat(updatedComment)
+                .isNotNull()
+                .matches(c -> c.id() > 0)
+                .matches(c -> c.text().equals(text))
+                .matches(c -> c.book() != null);
 
-        CommentDto updatedComment = commentService.update(commentId, updatedText, testBook.getId());
+        var entityGraph = em.getEntityGraph("Comment.withBookAndAuthorAndGenres");
+        var comment = em.createQuery(
+                        "SELECT c FROM Comment c " +
+                            "WHERE c.id = :id",
+                        Comment.class)
+                .setParameter("id", updatedComment.id())
+                .setHint(FETCH.getKey(), entityGraph)
+                .getSingleResult();
+
+        var expectedComment = commentMapper.toDto(comment);
 
         assertThat(updatedComment)
                 .usingRecursiveComparison()
@@ -124,11 +152,11 @@ public class CommentServiceImplTest {
     @Test
     @DisplayName("должен удалять комментарий без LazyInitializationException")
     void shouldDeleteCommentWithoutLazyException() {
-        long commentId = testComment.getId();
+        assertThat(commentService.findById(COMMENT_ID)).isPresent();
 
-        commentService.deleteById(commentId);
+        commentService.deleteById(COMMENT_ID);
 
-        var commentAfterDelete = commentService.findById(commentId);
-        assertThat(commentAfterDelete).isEmpty();
+        var afterDelete = commentService.findById(COMMENT_ID);
+        assertThat(afterDelete).isEmpty();
     }
 }

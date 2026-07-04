@@ -25,7 +25,7 @@ class JpaBookRepositoryTest {
     private static final long FIRST_BOOK_ID = 1L;
     private static final int EXPECTED_NUMBER_OF_BOOKS = 3;
 
-    private static final long EXPECTED_QUERIES_COUNT = 1L;
+    private static final long EXPECTED_QUERIES_COUNT = 2L;
 
     @Autowired
     private JpaBookRepository jpaBookRepository;

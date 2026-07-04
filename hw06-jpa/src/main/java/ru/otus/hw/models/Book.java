@@ -21,6 +21,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.List;
 
@@ -32,6 +34,12 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"author", "genres"})
 @ToString(exclude = {"author", "genres"})
 @Entity
+@NamedEntityGraph(
+        name = "Book.withAuthor",
+        attributeNodes = {
+                @NamedAttributeNode("author"),
+        }
+)
 @NamedEntityGraph(
         name = "Book.withAuthorAndGenres",
         attributeNodes = {
@@ -58,6 +66,7 @@ public class Book {
     @JoinTable(name = "books_genres",
             joinColumns = {@JoinColumn(name = "book_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "genre_id", referencedColumnName = "id")})
+    @Fetch(FetchMode.SUBSELECT)
     private List<Genre> genres;
 
     public Book(String title, Author author, List<Genre> genres) {

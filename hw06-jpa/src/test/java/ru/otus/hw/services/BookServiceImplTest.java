@@ -2,28 +2,42 @@ package ru.otus.hw.services;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.mapper.BookMapper;
-import ru.otus.hw.models.Author;
+import ru.otus.hw.mapper.BookMapperImpl;
+import ru.otus.hw.mapper.AuthorMapperImpl;
+import ru.otus.hw.mapper.GenreMapperImpl;
 import ru.otus.hw.models.Book;
-import ru.otus.hw.models.Genre;
+import ru.otus.hw.repositories.JpaAuthorRepository;
+import ru.otus.hw.repositories.JpaBookRepository;
+import ru.otus.hw.repositories.JpaGenreRepository;
 
-import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.data.jpa.repository.EntityGraph.EntityGraphType.FETCH;
 
 @DisplayName("Интеграционные тесты сервиса книг ")
-@SpringBootTest
-@Transactional
+@DataJpaTest
+@Import({BookServiceImpl.class,
+        BookMapperImpl.class,
+        JpaBookRepository.class,
+        JpaAuthorRepository.class,
+        JpaGenreRepository.class,
+        AuthorMapperImpl.class,
+        GenreMapperImpl.class})
+@Transactional(propagation = Propagation.NEVER)
 public class BookServiceImplTest {
+
+    private static final long BOOK_ID = 1L;
+    private static final long AUTHOR_ID = 1L;
+    private static final Set<Long> GENRE_IDS = Set.of(1L, 2L);
 
     @Autowired
     private BookService bookService;
@@ -34,55 +48,44 @@ public class BookServiceImplTest {
     @PersistenceContext
     private EntityManager em;
 
-    private Author testAuthor;
-    private Genre testGenre1;
-    private Genre testGenre2;
-    private Book testBook;
-
-    @BeforeEach
-    void setUp() {
-        testAuthor = em.find(Author.class, 1L);
-        testGenre1 = em.find(Genre.class, 1L);
-        testGenre2 = em.find(Genre.class, 2L);
-        testBook = em.find(Book.class, 1L);
-    }
-
     @Test
     @DisplayName("должен загружать книгу по id без LazyInitializationException")
     void shouldFindBookByIdWithoutLazyException() {
-        Set<Long> genreIds = Set.of(testGenre1.getId(), testGenre2.getId());
+        var entityGraph = em.getEntityGraph("Book.withAuthorAndGenres");
+        var book = em.createQuery(
+                        "SELECT b FROM Book b " +
+                            "WHERE b.id = :id",
+                        Book.class)
+                .setParameter("id", BOOK_ID)
+                .setHint(FETCH.getKey(), entityGraph)
+                .getSingleResult();
 
-        List<Genre> sortedGenres = genreIds.stream()
-                .map(id -> em.find(Genre.class, id))
-                .sorted(Comparator.comparing(Genre::getId))
-                .toList();
+        var expectedBook = bookMapper.toDto(book);
 
-        Book bookEntity = Book.builder()
-                .id(testBook.getId())
-                .title(testBook.getTitle())
-                .author(testAuthor)
-                .genres(sortedGenres)
-                .build();
+        var actualBook = bookService.findById(BOOK_ID);
 
-        BookDto expectedBookDto = bookMapper.toDto(bookEntity);
-
-        var optionalBookDto = bookService.findById(testBook.getId());
-
-        assertThat(optionalBookDto)
+        assertThat(actualBook)
                 .isPresent()
                 .get()
                 .usingRecursiveComparison()
-                .isEqualTo(expectedBookDto);
+                .isEqualTo(expectedBook);
     }
 
     @Test
     @DisplayName("должен загружать список всех книг без LazyInitializationException")
     void shouldFindAllBooksWithoutLazyException() {
-        List<BookDto> expectedBooks = bookService.findAll().stream()
-                .map(dto -> bookMapper.toEntity(dto))
-                .map(bookMapper::toDto).toList();
+        var entityGraph = em.getEntityGraph("Book.withAuthorAndGenres");
+        var books = em.createQuery(
+                        "SELECT b FROM Book b",
+                        Book.class)
+                .setHint(FETCH.getKey(), entityGraph)
+                .getResultList();
 
-        List<BookDto> actualBooks = bookService.findAll();
+        var expectedBooks = books.stream()
+                .map(bookMapper::toDto)
+                .toList();
+
+        var actualBooks = bookService.findAll();
 
         assertThat(actualBooks)
                 .usingRecursiveComparison()
@@ -92,66 +95,71 @@ public class BookServiceImplTest {
     @Test
     @DisplayName("должен вставлять новую книгу без LazyInitializationException")
     void shouldInsertNewBookWithoutLazyException() {
-        String newTitle = "newBook";
-        Set<Long> genreIds = Set.of(testGenre1.getId(), testGenre2.getId());
+        var title = "newBook";
 
-        List<Genre> sortedGenres = genreIds.stream()
-                .map(id -> em.find(Genre.class, id))
-                .sorted(Comparator.comparing(Genre::getId))
-                .toList();
+        var savedBook = bookService.insert(title, AUTHOR_ID, GENRE_IDS);
 
-        Book bookEntity = Book.builder()
-                .title(newTitle)
-                .author(testAuthor)
-                .genres(sortedGenres)
-                .build();
+        assertThat(savedBook)
+                .isNotNull()
+                .matches(b -> b.id() > 0)
+                .matches(b -> !b.title().isEmpty())
+                .matches(b -> b.author() != null)
+                .matches(b -> b.genres() != null);
 
-        BookDto expected = bookMapper.toDto(bookEntity);
+        var entityGraph = em.getEntityGraph("Book.withAuthorAndGenres");
+        var book = em.createQuery(
+                        "SELECT b FROM Book b " +
+                            "WHERE b.id = :id",
+                        Book.class)
+                .setParameter("id", savedBook.id())
+                .setHint(FETCH.getKey(), entityGraph)
+                .getSingleResult();
 
-        BookDto savedBook = bookService.insert(newTitle, testAuthor.getId(), genreIds);
+        var expectedBook = bookMapper.toDto(book);
 
         assertThat(savedBook)
                 .usingRecursiveComparison()
-                .ignoringFields("id")
-                .isEqualTo(expected);
+                .isEqualTo(expectedBook);
     }
 
     @Test
     @DisplayName("должен обновлять книгу без LazyInitializationException")
     void shouldUpdateBookWithoutLazyException() {
-        long bookId = testBook.getId();
-        String updatedTitle = "editedBook";
-        Set<Long> genreIds = Set.of(testGenre1.getId());
+        var title = "editedBook";
 
-        List<Genre> sortedGenres = genreIds.stream()
-                .map(id -> em.find(Genre.class, id))
-                .sorted(Comparator.comparing(Genre::getId))
-                .toList();
+        var updatedBook = bookService.update(BOOK_ID, title, AUTHOR_ID, GENRE_IDS);
 
-        Book bookEntity = Book.builder()
-                .id(bookId)
-                .title(updatedTitle)
-                .author(testAuthor)
-                .genres(sortedGenres)
-                .build();
+        assertThat(updatedBook)
+                .isNotNull()
+                .matches(b -> b.id() > 0)
+                .matches(b -> !b.title().isEmpty())
+                .matches(b -> b.author() != null)
+                .matches(b -> b.genres() != null);
 
-        BookDto expected = bookMapper.toDto(bookEntity);
+        var entityGraph = em.getEntityGraph("Book.withAuthorAndGenres");
+        var book = em.createQuery(
+                        "SELECT b FROM Book b " +
+                            "WHERE b.id = :id",
+                        Book.class)
+                .setParameter("id", updatedBook.id())
+                .setHint(FETCH.getKey(), entityGraph)
+                .getSingleResult();
 
-        BookDto updatedBook = bookService.update(bookId, updatedTitle, testAuthor.getId(), genreIds);
+        var expectedBook = bookMapper.toDto(book);
 
         assertThat(updatedBook)
                 .usingRecursiveComparison()
-                .isEqualTo(expected);
+                .isEqualTo(expectedBook);
     }
 
     @Test
     @DisplayName("должен удалять книгу без LazyInitializationException")
     void shouldDeleteBookWithoutLazyException() {
-        long bookId = testBook.getId();
+        assertThat(bookService.findById(BOOK_ID)).isPresent();
 
-        bookService.deleteById(bookId);
+        bookService.deleteById(BOOK_ID);
 
-        var bookAfterDelete = bookService.findById(bookId);
+        var bookAfterDelete = bookService.findById(BOOK_ID);
         assertThat(bookAfterDelete).isEmpty();
     }
 }
