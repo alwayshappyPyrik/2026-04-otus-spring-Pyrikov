@@ -15,7 +15,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Репозиторий на основе Jpa для работы с комментариями ")
+@DisplayName("Репозиторий на основе Spring Data Jpa для работы с комментариями ")
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 public class CommentRepositoryTest {

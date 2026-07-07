@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Репозиторий на основе Jpa для работы с книгами ")
+@DisplayName("Репозиторий на основе Spring Data Jpa для работы с книгами ")
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 class BookRepositoryTest {

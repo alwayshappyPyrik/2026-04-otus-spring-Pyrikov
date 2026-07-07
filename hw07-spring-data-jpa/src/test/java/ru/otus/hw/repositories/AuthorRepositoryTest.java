@@ -10,7 +10,7 @@ import ru.otus.hw.models.Author;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Репозиторий на основе Jpa для работы с авторами ")
+@DisplayName("Репозиторий на основе Spring Data Jpa для работы с авторами ")
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 public class AuthorRepositoryTest {
