@@ -33,8 +33,4 @@ public class Author {
 
     @Column(name = "full_name", columnDefinition = "varchar(255)", nullable = false)
     private String fullName;
-
-    public Author(String fullName) {
-        this.fullName = fullName;
-    }
 }

@@ -1,12 +1,13 @@
 package ru.otus.hw.services;
 
-import ru.otus.hw.dto.AuthorDto;
+import ru.otus.hw.dto.AuthorRequestDto;
+import ru.otus.hw.dto.AuthorResponseDto;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface AuthorService {
-    List<AuthorDto> findAll();
+    List<AuthorResponseDto> findAll();
 
-    Optional<AuthorDto> findById(long id);
+    Optional<AuthorResponseDto> findById(AuthorRequestDto authorRequestDto);
 }

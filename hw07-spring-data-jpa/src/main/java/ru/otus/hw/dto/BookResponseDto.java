@@ -1,16 +1,18 @@
 package ru.otus.hw.dto;
 
-import lombok.Builder;
-
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-@Builder
-public record BookDto(Long id, String title, AuthorDto author, List<GenreDto> genres) {
+public record BookResponseDto(
+        Long id,
+        String title,
+        AuthorResponseDto author,
+        Set<GenreResponseDto> genres
+) {
     @Override
     public String toString() {
         var genresString = genres.stream()
-                .map(GenreDto::toString)
+                .map(GenreResponseDto::toString)
                 .collect(Collectors.joining(","));
 
         return "Id: %d, title: %s, author: {%s}, genres: [%s]".formatted(

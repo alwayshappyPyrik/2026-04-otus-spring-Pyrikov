@@ -1,12 +1,12 @@
 package ru.otus.hw.services;
 
-import ru.otus.hw.dto.GenreDto;
+import ru.otus.hw.dto.GenresRequestDto;
+import ru.otus.hw.dto.GenreResponseDto;
 
 import java.util.List;
-import java.util.Set;
 
 public interface GenreService {
-    List<GenreDto> findAll();
+    List<GenreResponseDto> findAll();
 
-    List<GenreDto> findAllByIds(Set<Long> ids);
+    List<GenreResponseDto> findAllByIds(GenresRequestDto genresRequestDto);
 }

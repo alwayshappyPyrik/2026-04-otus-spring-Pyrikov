@@ -3,7 +3,8 @@ package ru.otus.hw.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.otus.hw.dto.CommentDto;
+import ru.otus.hw.dto.CommentRequestDto;
+import ru.otus.hw.dto.CommentResponseDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.mapper.CommentMapper;
 import ru.otus.hw.models.Comment;
@@ -25,47 +26,64 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CommentDto> findById(long id) {
-        return commentRepository.findById(id)
+    public Optional<CommentResponseDto> findById(CommentRequestDto commentRequestDto) {
+        return commentRepository.findById(commentRequestDto.id())
                 .map(commentMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommentDto> findAllByBookId(long bookId) {
-        return commentRepository.findAllByBookId(bookId).stream()
+    public List<CommentResponseDto> findAllByBookId(CommentRequestDto commentRequestDto) {
+        Long bookId = commentRequestDto.book().id();
+
+        List<Comment> comments = commentRepository.findAllByBookId(bookId);
+
+        if (comments.isEmpty()) {
+            throw new EntityNotFoundException("Comments for bookId %d not found".formatted(bookId));
+        }
+
+        return comments.stream()
                 .map(commentMapper::toDto)
                 .toList();
     }
 
     @Override
     @Transactional
-    public CommentDto insert(String text, long bookId) {
-        return save(0, text, bookId);
+    public CommentResponseDto insert(CommentRequestDto commentRequestDto) {
+        return saveComment(commentRequestDto.text(), commentRequestDto.book().id());
     }
 
     @Override
     @Transactional
-    public CommentDto update(long id, String text, long bookId) {
-        return save(id, text, bookId);
+    public CommentResponseDto update(CommentRequestDto commentRequestDto) {
+        return updateComment(commentRequestDto.id(), commentRequestDto.text());
     }
 
     @Override
     @Transactional
-    public void deleteById(long id) {
-        commentRepository.deleteById(id);
+    public void deleteById(CommentRequestDto commentRequestDto) {
+        commentRepository.deleteById(commentRequestDto.id());
     }
 
-    private CommentDto save(long id, String text, long bookId) {
+    private CommentResponseDto saveComment(String text, long bookId) {
         var book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException("Book with id %d not found".formatted(bookId)));
 
-        Comment comment;
-        if (id == 0) {
-            comment = new Comment(text, book);
-        } else {
-            comment = new Comment(id, text, book);
-        }
+        Comment comment = Comment.builder()
+                .text(text)
+                .book(book)
+                .build();
+
+        Comment savedComment = commentRepository.save(comment);
+        return commentMapper.toDto(savedComment);
+    }
+
+    private CommentResponseDto updateComment(long id, String text) {
+        var comment = commentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Comment with id %d not found".formatted(id)));
+
+        comment.setText(text);
+
         Comment savedComment = commentRepository.save(comment);
         return commentMapper.toDto(savedComment);
     }

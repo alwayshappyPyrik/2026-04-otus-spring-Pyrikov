@@ -33,8 +33,4 @@ public class Genre {
 
     @Column(name = "name", columnDefinition = "varchar(255)", unique = true, nullable = false)
     private String name;
-
-    public Genre(String name) {
-        this.name = name;
-    }
 }
