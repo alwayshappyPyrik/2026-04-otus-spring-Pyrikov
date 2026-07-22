@@ -1,0 +1,14 @@
+spring:
+  data:
+    mongodb:
+      database: test_library_db
+
+mongock:
+  enabled: false
+  runner-type: NONE
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 8.2.2
