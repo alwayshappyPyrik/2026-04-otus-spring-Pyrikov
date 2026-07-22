@@ -53,13 +53,6 @@
         </dependency>
 
         <dependency>
-            <groupId>io.mongock</groupId>
-            <artifactId>mongock-springboot-junit5</artifactId>
-            <version>${mongock.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>de.flapdoodle.embed</groupId>
             <artifactId>de.flapdoodle.embed.mongo.spring30x</artifactId>
             <version>4.22.0</version>

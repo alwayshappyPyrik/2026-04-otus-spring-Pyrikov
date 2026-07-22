@@ -29,6 +29,7 @@ public class ChangelogV1Shema {
         log.info("Executing migration: v1-initial-schema");
 
         createCollectionIfNotExists("authors");
+        createCollectionIfNotExists("genres");
         createCollectionIfNotExists("books");
         createCollectionIfNotExists("comments");
 

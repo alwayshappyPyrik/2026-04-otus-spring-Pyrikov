@@ -13,7 +13,7 @@ import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
 
-import java.util.Set;
+import java.util.List;
 
 @Getter
 @Setter
@@ -30,14 +30,15 @@ public class Book {
     @Field(name = "title", targetType = FieldType.STRING, write = Field.Write.NON_NULL)
     private String title;
 
-    @DocumentReference(lazy = true)
+    @DocumentReference(lazy = true, collection = "authors")
     @Field(name = "author_id")
     private Author author;
 
-    @Field(name = "genres", targetType = FieldType.ARRAY, write = Field.Write.NON_NULL)
-    private Set<Genre> genres;
+    @DocumentReference(lazy = true, collection = "genres")
+    @Field(name = "genre_ids")
+    private List<Genre> genres;
 
-    public Book(String title, Author author, Set<Genre> genres) {
+    public Book(String title, Author author, List<Genre> genres) {
         this.title = title;
         this.author = author;
         this.genres = genres;

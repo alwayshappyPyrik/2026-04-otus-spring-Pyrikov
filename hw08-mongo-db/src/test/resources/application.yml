@@ -4,8 +4,8 @@ spring:
       database: test_library_db
 
 mongock:
+  enabled: false
   runner-type: NONE
-  enabled: true
 
 de:
   flapdoodle:

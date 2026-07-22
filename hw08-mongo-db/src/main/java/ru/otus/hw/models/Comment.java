@@ -28,7 +28,7 @@ public class Comment {
     @Field(name = "text", targetType = FieldType.STRING, write = Field.Write.NON_NULL)
     private String text;
 
-    @DocumentReference(lazy = true)
+    @DocumentReference(lazy = true, collection = "books")
     @Field(name = "book_id")
     private Book book;
 

@@ -6,7 +6,6 @@ import org.springframework.shell.standard.ShellMethod;
 import ru.otus.hw.dto.AuthorRequestDto;
 import ru.otus.hw.dto.BookRequestDto;
 import ru.otus.hw.dto.BookResponseDto;
-import ru.otus.hw.models.Genre;
 import ru.otus.hw.services.BookService;
 
 import java.util.Set;
@@ -37,8 +36,8 @@ public class BookCommands {
                 .orElse("Book with id %s not found".formatted(id));
     }
 
-    @ShellMethod(value = "Insert book (comma-separated, e.g.: bins newBook author_id Comedy,Thriller)", key = "bins")
-    public String insertBook(String title, String authorId, Set<Genre> genreNames) {
+    @ShellMethod(value = "Insert book (comma-separated, e.g.: bins newBook 1 1,6)", key = "bins")
+    public String insertBook(String title, String authorId, Set<String> genresIds) {
         AuthorRequestDto authorRequestDto = AuthorRequestDto.builder()
                 .id(authorId)
                 .build();
@@ -46,16 +45,16 @@ public class BookCommands {
         BookRequestDto bookRequestDto = BookRequestDto.builder()
                 .title(title)
                 .author(authorRequestDto)
-                .genres(genreNames)
+                .genreIds(genresIds)
                 .build();
 
         var savedBook = bookService.insert(bookRequestDto);
         return savedBook.toString();
     }
 
-    @ShellMethod(value = "Update book (comma-separated, e.g.: bupd book_id editedBook author_id Action,Fantasies)",
+    @ShellMethod(value = "Update book (comma-separated, e.g.: bupd book_id editedBook author_id genres_id)",
             key = "bupd")
-    public String updateBook(String id, String title, String authorId, Set<Genre> genreNames) {
+    public String updateBook(String id, String title, String authorId, Set<String> genresIds) {
         AuthorRequestDto authorRequestDto = AuthorRequestDto.builder()
                 .id(authorId)
                 .build();
@@ -64,7 +63,7 @@ public class BookCommands {
                 .id(id)
                 .title(title)
                 .author(authorRequestDto)
-                .genres(genreNames)
+                .genreIds(genresIds)
                 .build();
 
         var savedBook = bookService.update(bookRequestDto);

@@ -8,9 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 @ChangeUnit(
         id = "v1-initial-data",
@@ -26,6 +28,8 @@ public class ChangelogV2Data {
 
     private final List<Object> addedAuthorIds = new ArrayList<>();
 
+    private final List<Object> addedGenreIds = new ArrayList<>();
+
     private final List<Object> addedBookIds = new ArrayList<>();
 
     private final List<Object> addedCommentIds = new ArrayList<>();
@@ -34,6 +38,7 @@ public class ChangelogV2Data {
     public void migrate() {
         log.info("Executing migration: v1-initial-data");
         insertAuthors();
+        insertGenres();
         insertBooks();
         insertComments();
         log.info("Migration v1-initial-data completed!");
@@ -53,20 +58,59 @@ public class ChangelogV2Data {
         log.info("Added {} authors", addedAuthorIds.size());
     }
 
-    private void insertBooks() {
-        Document author1 = mongoTemplate.getCollection("authors")
-                .find(new Document("full_name", "Author_1")).first();
-        Document author2 = mongoTemplate.getCollection("authors")
-                .find(new Document("full_name", "Author_2")).first();
-        Document author3 = mongoTemplate.getCollection("authors")
-                .find(new Document("full_name", "Author_3")).first();
-
-        List<Document> books = Arrays.asList(
-                createBook("BookTitle_1", author1, "Genre_1", "Genre_2"),
-                createBook("BookTitle_2", author2, "Genre_3", "Genre_4"),
-                createBook("BookTitle_3", author3, "Genre_5", "Genre_6")
+    private void insertGenres() {
+        List<Document> genres = Arrays.asList(
+                new Document("name", "Genre_1"),
+                new Document("name", "Genre_2"),
+                new Document("name", "Genre_3"),
+                new Document("name", "Genre_4"),
+                new Document("name", "Genre_5"),
+                new Document("name", "Genre_6")
         );
 
+        for (Document genre : genres) {
+            mongoTemplate.getCollection("genres").insertOne(genre);
+            addedGenreIds.add(genre.get("_id"));
+        }
+        log.info("Added {} genres", addedGenreIds.size());
+    }
+
+    private void insertBooks() {
+        Map<String, Document> authors = getAuthorsMap();
+        Map<String, Document> genres = getGenresMap();
+
+        List<Document> books = createBooks(authors, genres);
+        saveBooks(books);
+    }
+
+    private Map<String, Document> getAuthorsMap() {
+        Map<String, Document> authorsMap = new HashMap<>();
+        for (Document author : mongoTemplate.getCollection("authors").find()) {
+            authorsMap.put(author.getString("full_name"), author);
+        }
+        return authorsMap;
+    }
+
+    private Map<String, Document> getGenresMap() {
+        Map<String, Document> genresMap = new HashMap<>();
+        for (Document genre : mongoTemplate.getCollection("genres").find()) {
+            genresMap.put(genre.getString("name"), genre);
+        }
+        return genresMap;
+    }
+
+    private List<Document> createBooks(Map<String, Document> authors, Map<String, Document> genres) {
+        return Arrays.asList(
+                createBook("BookTitle_1", authors.get("Author_1"),
+                        List.of(genres.get("Genre_1"), genres.get("Genre_2"))),
+                createBook("BookTitle_2", authors.get("Author_2"),
+                        List.of(genres.get("Genre_3"), genres.get("Genre_4"))),
+                createBook("BookTitle_3", authors.get("Author_3"),
+                        List.of(genres.get("Genre_5"), genres.get("Genre_6")))
+        );
+    }
+
+    private void saveBooks(List<Document> books) {
         for (Document book : books) {
             mongoTemplate.getCollection("books").insertOne(book);
             addedBookIds.add(book.get("_id"));
@@ -74,13 +118,17 @@ public class ChangelogV2Data {
         log.info("Added {} books", addedBookIds.size());
     }
 
-    private Document createBook(String title, Document author, String genre1, String genre2) {
+    private Document createBook(String title, Document author, List<Document> genres) {
+        List<Object> genreIds = new ArrayList<>();
+        for (Document genre : genres) {
+            if (genre != null) {
+                genreIds.add(genre.get("_id"));
+            }
+        }
+
         return new Document("title", title)
                 .append("author_id", author != null ? author.get("_id") : null)
-                .append("genres", Arrays.asList(
-                        new Document("name", genre1),
-                        new Document("name", genre2)
-                ));
+                .append("genre_ids", genreIds);  // ← Массив ID жанров (как в @DocumentReference)
     }
 
     private void insertComments() {
@@ -114,6 +162,7 @@ public class ChangelogV2Data {
         log.info("Rolling back migration: v1-initial-data");
         deleteComments();
         deleteBooks();
+        deleteGenres();
         deleteAuthors();
         log.info("Rollback v1-initial-data completed!");
     }
@@ -135,6 +184,16 @@ public class ChangelogV2Data {
                         .deleteOne(new Document("_id", id));
             }
             log.info("Removed {} books", addedBookIds.size());
+        }
+    }
+
+    private void deleteGenres() {
+        if (!addedGenreIds.isEmpty()) {
+            for (Object id : addedGenreIds) {
+                mongoTemplate.getCollection("genres")
+                        .deleteOne(new Document("_id", id));
+            }
+            log.info("Removed {} genres", addedGenreIds.size());
         }
     }
 
