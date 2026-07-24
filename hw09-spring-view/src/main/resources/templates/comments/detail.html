@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Comment Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #9C27B0;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f3e5f5;
+            font-weight: bold;
+            width: 25%;
+            color: #333;
+        }
+        td {
+            width: 75%;
+            color: #555;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-edit {
+            background-color: #2196F3;
+        }
+        .btn-edit:hover {
+            background-color: #0b7dda;
+        }
+        .btn-back {
+            background-color: #4CAF50;
+        }
+        .btn-back:hover {
+            background-color: #45a049;
+        }
+        .btn-comments {
+            background-color: #9C27B0;
+        }
+        .btn-comments:hover {
+            background-color: #7B1FA2;
+        }
+        .not-found {
+            color: #f44336;
+            font-weight: bold;
+            padding: 20px;
+            text-align: center;
+            background-color: #ffebee;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Comment Details</h1>
+
+    <div th:if="${comment != null}" th:object="${comment}">
+        <table>
+            <tr>
+                <th>ID</th>
+                <td th:text="*{id}"></td>
+            </tr>
+            <tr>
+                <th>Text</th>
+                <td th:text="*{text}"></td>
+            </tr>
+            <tr>
+                <th>Book</th>
+                <td>
+                    <span th:if="*{book != null}" th:text="*{book.title}"></span>
+                    <span th:unless="*{book != null}">No book</span>
+                </td>
+            </tr>
+        </table>
+
+        <div class="actions">
+            <button th:onclick="'window.location.href=\'/comments/\' + ' + *{id} + '/edit?bookId=' + (*{book} != null ? *{book.id} : '')"
+                    class="btn btn-edit">Edit</button>
+            <button th:onclick="'window.location.href=\'/comments/book/\' + ' + (*{book} != null ? *{book.id} : '')"
+                    class="btn btn-comments">Back to Comments</button>
+            <button onclick="window.location.href='/books'" class="btn btn-back">Go to Books</button>
+        </div>
+    </div>
+
+    <div th:unless="${comment != null}">
+        <p class="not-found">Comment not found</p>
+        <div class="actions">
+            <button onclick="window.location.href='/books'" class="btn btn-back">Go to Books</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
