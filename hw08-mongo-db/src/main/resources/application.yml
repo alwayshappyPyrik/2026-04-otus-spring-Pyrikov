@@ -1,0 +1,26 @@
+spring:
+
+  data:
+    mongodb:
+      uri: mongodb://admin:admin@localhost:27017/library_db?authSource=admin
+
+  shell:
+    interactive:
+      enabled: true
+
+mongock:
+  runner-type: InitializingBean
+  enabled: true
+  migration-repository-name: databasechangelog
+  lock-repository-name: databasechangeloglock
+  migration-scan-package:
+    - ru.otus.hw.mongock.changelog
+  transaction-strategy: change_unit
+
+logging:
+  level:
+    ru.otus.hw.mongock.changelog: INFO
+    io.mongock: DEBUG
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+
+
