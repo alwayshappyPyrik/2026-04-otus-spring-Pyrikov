@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Comment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+            min-height: 120px;
+        }
+        textarea:focus {
+            border-color: #2196F3;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-primary {
+            background-color: #2196F3;
+        }
+        .btn-primary:hover {
+            background-color: #0b7dda;
+        }
+        .btn-secondary {
+            background-color: #9e9e9e;
+        }
+        .btn-secondary:hover {
+            background-color: #7a7a7a;
+        }
+        .not-found {
+            color: #f44336;
+            font-weight: bold;
+            padding: 20px;
+            text-align: center;
+            background-color: #ffebee;
+            border-radius: 4px;
+        }
+        .comment-info {
+            background-color: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+            color: #555;
+        }
+        .comment-info strong {
+            color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Edit Comment</h1>
+
+    <div th:if="${comment != null}" th:object="${comment}">
+        <div class="comment-info">
+            <strong>Comment ID:</strong> <span th:text="*{id}"></span>
+        </div>
+
+        <form th:action="@{/comments/{id}(id=*{id})}" method="post">
+            <input type="hidden" name="_method" value="PUT">
+            <input type="hidden" name="bookId" th:value="${bookId}">
+
+            <div class="form-group">
+                <label>Comment:</label>
+                <label>
+                    <textarea th:field="*{text}" required></textarea>
+                </label>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="button"
+                        th:onclick="'window.location.href=\'/comments/book/\' + ' + ${bookId}"
+                        class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div th:unless="${comment != null}">
+        <p class="not-found">Comment not found</p>
+        <div class="actions">
+            <button type="button" onclick="window.location.href='/books'" class="btn btn-secondary">Back to Books</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
