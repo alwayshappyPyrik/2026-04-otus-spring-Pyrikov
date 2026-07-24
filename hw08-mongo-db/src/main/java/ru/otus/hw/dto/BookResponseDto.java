@@ -1,7 +1,6 @@
 package ru.otus.hw.dto;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public record BookResponseDto(
         String id,
@@ -11,15 +10,11 @@ public record BookResponseDto(
 ) {
     @Override
     public String toString() {
-        var genresString = genres.stream()
-                .map(GenreResponseDto::toString)
-                .collect(Collectors.joining(", "));
-
         return "Id: %s, title: %s, author: {%s}, genres: [%s]".formatted(
                 id,
                 title,
                 author,
-                genresString
+                genres
         );
     }
 }

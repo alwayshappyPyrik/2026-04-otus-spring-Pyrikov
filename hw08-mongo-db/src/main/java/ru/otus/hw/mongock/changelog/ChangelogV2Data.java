@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @ChangeUnit(
         id = "v1-initial-data",
@@ -118,17 +120,38 @@ public class ChangelogV2Data {
         log.info("Added {} books", addedBookIds.size());
     }
 
-    private Document createBook(String title, Document author, List<Document> genres) {
-        List<Object> genreIds = new ArrayList<>();
-        for (Document genre : genres) {
-            if (genre != null) {
-                genreIds.add(genre.get("_id"));
-            }
-        }
 
-        return new Document("title", title)
-                .append("author_id", author != null ? author.get("_id") : null)
-                .append("genre_ids", genreIds);  // ← Массив ID жанров (как в @DocumentReference)
+    private Document createBook(String title, Document author, List<Document> genres) {
+        Document book = new Document("title", title);
+        book.append("author", copyAuthor(author));
+        book.append("genres", copyGenres(genres));
+        return book;
+    }
+
+    private Document copyAuthor(Document author) {
+        if (author == null) {
+            return null;
+        }
+        return copyDocument(author);
+    }
+
+
+    private List<Document> copyGenres(List<Document> genres) {
+        if (genres == null) {
+            return new ArrayList<>();
+        }
+        return genres.stream()
+                .filter(Objects::nonNull)
+                .map(this::copyDocument)
+                .collect(Collectors.toList());
+    }
+
+    private Document copyDocument(Document source) {
+        Document copy = new Document();
+        for (Map.Entry<String, Object> entry : source.entrySet()) {
+            copy.append(entry.getKey(), entry.getValue());
+        }
+        return copy;
     }
 
     private void insertComments() {
