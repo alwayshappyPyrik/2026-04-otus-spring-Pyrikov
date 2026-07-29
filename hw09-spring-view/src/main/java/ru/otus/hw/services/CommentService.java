@@ -4,11 +4,10 @@ import ru.otus.hw.dto.CommentRequestDto;
 import ru.otus.hw.dto.CommentResponseDto;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface CommentService {
 
-    Optional<CommentResponseDto> findById(CommentRequestDto commentRequestDto);
+    CommentResponseDto findById(CommentRequestDto commentRequestDto);
 
     List<CommentResponseDto> findAllByBookId(CommentRequestDto commentRequestDto);
 

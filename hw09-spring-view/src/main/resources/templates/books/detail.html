@@ -2,7 +2,9 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Details</title>
+    <link rel="icon" href="data:,">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,6 +53,7 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            align-items: center;
         }
         .btn {
             display: inline-block;
@@ -62,6 +65,7 @@
             border: none;
             cursor: pointer;
             color: white;
+            font-size: 14px;
         }
         .btn-edit {
             background-color: #2196F3;
@@ -96,12 +100,6 @@
             margin: 2px 4px 2px 0;
             font-size: 14px;
             color: #1a73e8;
-        }
-        .genres-list li:not(:last-child):after {
-            content: ", ";
-            background: none;
-            padding: 0;
-            color: #555;
         }
     </style>
 </head>

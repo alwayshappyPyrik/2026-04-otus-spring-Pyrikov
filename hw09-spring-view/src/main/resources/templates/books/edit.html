@@ -2,7 +2,9 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Book</title>
+    <link rel="icon" href="data:,">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -125,6 +127,12 @@
             background-color: #ffebee;
             border-radius: 4px;
         }
+        .error {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 5px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -132,7 +140,7 @@
     <h1>Edit Book</h1>
 
     <div th:if="${book != null}" th:object="${book}">
-        <form th:action="@{/books/{id}(id=*{id})}" method="post">
+        <form th:action="@{/books/{id}(id=${book.id})}" method="post">
             <input type="hidden" name="_method" value="PUT">
 
             <div class="form-group">
@@ -140,6 +148,7 @@
                 <label>
                     <input type="text" th:field="*{title}" required>
                 </label>
+                <span th:errors="*{title}" class="error"></span>
             </div>
 
             <div class="form-group">
@@ -152,6 +161,7 @@
                                 th:text="${author.fullName}"></option>
                     </select>
                 </label>
+                <span th:errors="*{authorId}" class="error"></span>
             </div>
 
             <div class="form-group">
@@ -167,7 +177,8 @@
                         <label th:for="|genre_${genre.id}|" th:text="${genre.name}"></label>
                     </div>
                 </div>
-                <span class="help-text">Select one or more genres</span>
+                <input type="hidden" name="_genreIds" value=""/>
+                <span th:errors="*{genreIds}" class="error"></span>
             </div>
 
             <div class="actions">

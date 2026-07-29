@@ -106,6 +106,7 @@
             <label>Comment:</label>
             <label>
                 <textarea th:field="*{text}" required placeholder="Enter your comment..."></textarea>
+                <span th:errors="*{text}" class="error"></span>
             </label>
         </div>
 

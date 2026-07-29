@@ -3,9 +3,12 @@ package ru.otus.hw.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.otus.hw.dto.BookCreateRequestDto;
 import ru.otus.hw.dto.BookRequestDto;
 import ru.otus.hw.dto.BookResponseDto;
+import ru.otus.hw.dto.BookUpdateRequestDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
+import ru.otus.hw.exceptions.NotFoundException;
 import ru.otus.hw.mapper.BookMapper;
 import ru.otus.hw.models.Author;
 import ru.otus.hw.models.Book;
@@ -15,7 +18,6 @@ import ru.otus.hw.repositories.BookRepository;
 import ru.otus.hw.repositories.GenreRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @RequiredArgsConstructor
@@ -31,9 +33,13 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<BookResponseDto> findById(BookRequestDto bookRequestDto) {
-        return bookRepository.findById(bookRequestDto.id())
-                .map(bookMapper::toDto);
+    public BookResponseDto findById(BookRequestDto bookRequestDto) {
+        Long id = bookRequestDto.id();
+
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Book with id " + id + " not found"));
+
+        return bookMapper.toDto(book);
     }
 
     @Override
@@ -46,13 +52,13 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    public BookResponseDto insert(BookRequestDto bookRequestDto) {
-        validateGenreIds(bookRequestDto.genreIds());
+    public BookResponseDto insert(BookCreateRequestDto bookCreateRequestDto) {
+        validateGenreIds(bookCreateRequestDto.genreIds());
 
-        Author author = findAuthorById(bookRequestDto.authorId());
-        List<Genre> genres = findGenresByIds(bookRequestDto.genreIds());
+        Author author = findAuthorById(bookCreateRequestDto.authorId());
+        List<Genre> genres = findGenresByIds(bookCreateRequestDto.genreIds());
         Book book = Book.builder()
-                .title(bookRequestDto.title())
+                .title(bookCreateRequestDto.title())
                 .author(author)
                 .genres(genres)
                 .build();
@@ -62,17 +68,17 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    public BookResponseDto update(BookRequestDto bookRequestDto) {
-        validateGenreIds(bookRequestDto.genreIds());
+    public BookResponseDto update(BookUpdateRequestDto bookUpdateRequestDto) {
+        validateGenreIds(bookUpdateRequestDto.genreIds());
 
-        Book book = bookRepository.findById(bookRequestDto.id())
+        Book book = bookRepository.findById(bookUpdateRequestDto.id())
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Book with id %d not found".formatted(bookRequestDto.id())
+                        "Book with id %d not found".formatted(bookUpdateRequestDto.id())
                 ));
-        Author author = findAuthorById(bookRequestDto.authorId());
-        List<Genre> genres = findGenresByIds(bookRequestDto.genreIds());
+        Author author = findAuthorById(bookUpdateRequestDto.authorId());
+        List<Genre> genres = findGenresByIds(bookUpdateRequestDto.genreIds());
 
-        book.setTitle(bookRequestDto.title());
+        book.setTitle(bookUpdateRequestDto.title());
         book.setAuthor(author);
         book.setGenres(genres);
 

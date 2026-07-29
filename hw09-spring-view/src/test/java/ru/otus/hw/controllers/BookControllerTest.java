@@ -11,9 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.ModelAndView;
+import ru.otus.hw.dto.BookCreateRequestDto;
 import ru.otus.hw.dto.BookResponseDto;
 import ru.otus.hw.dto.BookRequestDto;
 import ru.otus.hw.dto.AuthorResponseDto;
+import ru.otus.hw.dto.BookUpdateRequestDto;
 import ru.otus.hw.dto.GenreResponseDto;
 import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.BookService;
@@ -21,7 +23,6 @@ import ru.otus.hw.services.GenreService;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,7 +52,8 @@ class BookControllerTest {
     private GenreService genreService;
 
     private BookResponseDto bookResponseDto;
-    private BookRequestDto bookRequestDto;
+    private BookCreateRequestDto bookCreateRequestDto;
+    private BookUpdateRequestDto bookUpdateRequestDto;
     private AuthorResponseDto authorResponseDto;
     private GenreResponseDto genreResponseDto1;
     private GenreResponseDto genreResponseDto2;
@@ -83,7 +85,13 @@ class BookControllerTest {
                 .genres(Set.of(genreResponseDto1, genreResponseDto2))
                 .build();
 
-        bookRequestDto = BookRequestDto.builder()
+        bookCreateRequestDto = BookCreateRequestDto.builder()
+                .title("Test Book")
+                .authorId(1L)
+                .genreIds(Set.of(1L, 2L))
+                .build();
+
+        bookUpdateRequestDto = BookUpdateRequestDto.builder()
                 .id(1L)
                 .title("Test Book")
                 .authorId(1L)
@@ -98,7 +106,7 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName(" должен возвращать список всех книг")
+    @DisplayName("должен возвращать список всех книг")
     void findAllBooks_ShouldReturnBookListPage() throws Exception {
         when(bookService.findAll()).thenReturn(bookList);
 
@@ -131,9 +139,9 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName(" должен возвращать книгу по id")
+    @DisplayName("должен возвращать книгу по id")
     void findBookById_ShouldReturnBookDetailPage() throws Exception {
-        when(bookService.findById(any(BookRequestDto.class))).thenReturn(Optional.of(bookResponseDto));
+        when(bookService.findById(any(BookRequestDto.class))).thenReturn(bookResponseDto);
 
         mockMvc.perform(get("/books/{id}", 1L))
                 .andExpect(status().isOk())
@@ -161,31 +169,14 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName(" должен создавать книгу и редиректить на книги")
-    void createBook_ShouldCreateBookAndRedirect() throws Exception {
-        when(bookService.insert(any(BookRequestDto.class))).thenReturn(bookResponseDto);
-
-        mockMvc.perform(post("/books")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("title", "Test Book")
-                        .param("fullName", "Test Author")
-                        .param("genreName1", "Test Genre 1")
-                        .param("genreName2", "Test Genre 2"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/books"));
-
-        verify(bookService, times(1)).insert(any(BookRequestDto.class));
-    }
-
-    @Test
-    @DisplayName(" должен показывать созданные книги с авторами и жанрами")
+    @DisplayName("должен показывать форму создания с авторами и жанрами")
     void showCreateForm_ShouldReturnCreateFormWithData() throws Exception {
         when(authorService.findAll()).thenReturn(authorList);
         when(genreService.findAll()).thenReturn(genreList);
 
         mockMvc.perform(get("/books/new"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("books/create"))
+                .andExpect(view().name("books/new"))
                 .andExpect(model().attributeExists("book"))
                 .andExpect(model().attributeExists("authors"))
                 .andExpect(model().attributeExists("genres"))
@@ -195,9 +186,8 @@ class BookControllerTest {
                     ModelAndView mav = result.getModelAndView();
 
                     Assertions.assertNotNull(mav);
-                    BookRequestDto book = (BookRequestDto) mav.getModel().get("book");
+                    BookCreateRequestDto book = (BookCreateRequestDto) mav.getModel().get("book");
                     assertThat(book).isNotNull();
-                    assertThat(book.id()).isNull();
                     assertThat(book.title()).isNull();
                     assertThat(book.authorId()).isNull();
                     assertThat(book.genreIds()).isNull();
@@ -222,9 +212,35 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName("Должен показывать форму редактирования с книгами, авторами и жанрами")
+    @DisplayName("должен создавать книгу и редиректить на список книг")
+    void createBook_ShouldCreateBookAndRedirect() throws Exception {
+        when(bookService.insert(any(BookCreateRequestDto.class))).thenReturn(bookResponseDto);
+
+        mockMvc.perform(post("/books")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("title", "Test Book")
+                        .param("authorId", "1")
+                        .param("genreIds", "1")
+                        .param("genreIds", "2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/books"));
+
+        ArgumentCaptor<BookCreateRequestDto> captor = ArgumentCaptor.forClass(BookCreateRequestDto.class);
+        verify(bookService, times(1)).insert(captor.capture());
+
+        BookCreateRequestDto captured = captor.getValue();
+        assertThat(captured)
+                .satisfies(book -> {
+                    assertThat(book.title()).isEqualTo("Test Book");
+                    assertThat(book.authorId()).isEqualTo(1L);
+                    assertThat(book.genreIds()).containsExactlyInAnyOrder(1L, 2L);
+                });
+    }
+
+    @Test
+    @DisplayName("должен показывать форму редактирования с книгой, авторами и жанрами")
     void showEditForm_ShouldReturnEditFormWithData() throws Exception {
-        when(bookService.findById(any(BookRequestDto.class))).thenReturn(Optional.of(bookResponseDto));
+        when(bookService.findById(any(BookRequestDto.class))).thenReturn(bookResponseDto);
         when(authorService.findAll()).thenReturn(authorList);
         when(genreService.findAll()).thenReturn(genreList);
 
@@ -238,11 +254,13 @@ class BookControllerTest {
                     ModelAndView mav = result.getModelAndView();
 
                     Assertions.assertNotNull(mav);
-                    BookRequestDto book = (BookRequestDto) mav.getModel().get("book");
+                    BookUpdateRequestDto book = (BookUpdateRequestDto) mav.getModel().get("book");
                     assertThat(book)
                             .satisfies(b -> {
                                 assertThat(b.id()).isEqualTo(1L);
                                 assertThat(b.title()).isEqualTo("Test Book");
+                                assertThat(b.authorId()).isEqualTo(1L);
+                                assertThat(b.genreIds()).containsExactlyInAnyOrder(1L, 2L);
                             });
 
                     @SuppressWarnings("unchecked")
@@ -268,9 +286,9 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName("Должен обновить книгу и перенаправить на список книг")
-    void updateBook_ShouldRedirectToBooksList() throws Exception {
-        when(bookService.update(any(BookRequestDto.class))).thenReturn(bookResponseDto);
+    @DisplayName("должен обновить книгу и перенаправить на страницу книги")
+    void updateBook_ShouldRedirectToBookPage() throws Exception {
+        when(bookService.update(any(BookUpdateRequestDto.class))).thenReturn(bookResponseDto);
 
         mockMvc.perform(put("/books/{id}", 1L)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -279,12 +297,12 @@ class BookControllerTest {
                         .param("genreIds", "1")
                         .param("genreIds", "2"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/books"));
+                .andExpect(redirectedUrl("/books/1"));
 
-        ArgumentCaptor<BookRequestDto> captor = ArgumentCaptor.forClass(BookRequestDto.class);
+        ArgumentCaptor<BookUpdateRequestDto> captor = ArgumentCaptor.forClass(BookUpdateRequestDto.class);
         verify(bookService, times(1)).update(captor.capture());
 
-        BookRequestDto captured = captor.getValue();
+        BookUpdateRequestDto captured = captor.getValue();
         assertThat(captured)
                 .satisfies(book -> {
                     assertThat(book.id()).isEqualTo(1L);
@@ -292,14 +310,10 @@ class BookControllerTest {
                     assertThat(book.authorId()).isEqualTo(1L);
                     assertThat(book.genreIds()).containsExactlyInAnyOrder(1L, 2L);
                 });
-
-        assertThat(authorResponseDto.fullName()).isEqualTo("Test Author");
-        assertThat(genreResponseDto1.name()).isEqualTo("Test Genre 1");
-        assertThat(genreResponseDto2.name()).isEqualTo("Test Genre 2");
     }
 
     @Test
-    @DisplayName("Должен удалить книгу и перенаправить на список книг")
+    @DisplayName("должен удалить книгу и перенаправить на список книг")
     void deleteBook_ShouldRedirectToBooksList() throws Exception {
         doNothing().when(bookService).deleteById(any(BookRequestDto.class));
 

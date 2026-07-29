@@ -117,6 +117,7 @@
                 <label>Comment:</label>
                 <label>
                     <textarea th:field="*{text}" required></textarea>
+                    <span th:errors="*{text}" class="error"></span>
                 </label>
             </div>
 

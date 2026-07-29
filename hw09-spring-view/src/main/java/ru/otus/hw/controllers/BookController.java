@@ -1,18 +1,22 @@
 package ru.otus.hw.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import ru.otus.hw.dto.BookCreateRequestDto;
 import ru.otus.hw.dto.BookRequestDto;
+import ru.otus.hw.dto.BookResponseDto;
+import ru.otus.hw.dto.BookUpdateRequestDto;
 import ru.otus.hw.dto.GenreResponseDto;
-import ru.otus.hw.exceptions.NotFoundException;
 import ru.otus.hw.services.BookService;
 import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.GenreService;
@@ -30,48 +34,46 @@ public class BookController {
     private final GenreService genreService;
 
     @GetMapping
-    public String findAllBooks(Model model) {
-        var books = bookService.findAll();
-        model.addAttribute("books", books);
+    public String findAll(Model model) {
+        model.addAttribute("books", bookService.findAll());
         return "books/list";
     }
 
     @GetMapping("/{id}")
-    public String findBookById(@PathVariable long id, Model model) {
-        BookRequestDto bookRequestDto = BookRequestDto.builder()
-                .id(id)
-                .build();
-
-        var book = bookService.findById(bookRequestDto)
-                .orElseThrow(() -> new NotFoundException("Book with id " + id + " not found"));
-        model.addAttribute("book", book);
+    public String findBookById(@PathVariable Long id, Model model) {
+        BookRequestDto request = BookRequestDto.builder().id(id).build();
+        model.addAttribute("book", bookService.findById(request));
         return "books/detail";
     }
 
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("book", BookRequestDto.builder().build());
+        model.addAttribute("book", BookCreateRequestDto.builder().build());
         model.addAttribute("authors", authorService.findAll());
         model.addAttribute("genres", genreService.findAll());
-        return "books/create";
+        return "books/new";
     }
 
     @PostMapping
-    public String createBook(@ModelAttribute BookRequestDto bookRequestDto) {
-        bookService.insert(bookRequestDto);
+    public String createBook(@Valid @ModelAttribute("book") BookCreateRequestDto createRequest,
+                             BindingResult bindingResult,
+                             Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("authors", authorService.findAll());
+            model.addAttribute("genres", genreService.findAll());
+            return "books/new";
+        }
+
+        bookService.insert(createRequest);
         return "redirect:/books";
     }
 
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable long id, Model model) {
-        var bookRequestDto = BookRequestDto.builder()
-                .id(id)
-                .build();
+    public String showEditForm(@PathVariable Long id, Model model) {
+        BookRequestDto request = BookRequestDto.builder().id(id).build();
+        BookResponseDto bookResponse = bookService.findById(request);
 
-        var bookResponse = bookService.findById(bookRequestDto)
-                .orElseThrow(() -> new NotFoundException("Book with id " + id + " not found"));
-
-        var bookForm = BookRequestDto.builder()
+        BookUpdateRequestDto bookForm = BookUpdateRequestDto.builder()
                 .id(bookResponse.id())
                 .title(bookResponse.title())
                 .authorId(bookResponse.author().id())
@@ -87,27 +89,28 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
-    public String updateBook(@PathVariable long id,
-                             @ModelAttribute BookRequestDto bookRequestDto) {
+    public String updateBook(@PathVariable Long id,
+                             @Valid @ModelAttribute("book") BookUpdateRequestDto updateRequest,
+                             BindingResult bindingResult,
+                             Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("authors", authorService.findAll());
+            model.addAttribute("genres", genreService.findAll());
+            return "books/edit";
+        }
 
-        var book = BookRequestDto.builder()
+        BookUpdateRequestDto request = updateRequest.toBuilder()
                 .id(id)
-                .title(bookRequestDto.title())
-                .authorId(bookRequestDto.authorId())
-                .genreIds(bookRequestDto.genreIds())
                 .build();
 
-        bookService.update(book);
-        return "redirect:/books";
+        BookResponseDto updatedBook = bookService.update(request);
+        return "redirect:/books/" + updatedBook.id();
     }
 
     @DeleteMapping("/{id}")
-    public String deleteBook(@PathVariable long id) {
-        var bookRequestDto = BookRequestDto.builder()
-                .id(id)
-                .build();
-
-        bookService.deleteById(bookRequestDto);
+    public String deleteBook(@PathVariable Long id) {
+        BookRequestDto request = BookRequestDto.builder().id(id).build();
+        bookService.deleteById(request);
         return "redirect:/books";
     }
 }
