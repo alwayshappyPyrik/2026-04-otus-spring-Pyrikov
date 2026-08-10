@@ -7,7 +7,6 @@ import ru.otus.hw.dto.BookCreateRequestDto;
 import ru.otus.hw.dto.BookRequestDto;
 import ru.otus.hw.dto.BookResponseDto;
 import ru.otus.hw.dto.BookUpdateRequestDto;
-import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.exceptions.NotFoundException;
 import ru.otus.hw.mapper.BookMapper;
 import ru.otus.hw.models.Author;
@@ -72,7 +71,7 @@ public class BookServiceImpl implements BookService {
         validateGenreIds(bookUpdateRequestDto.genreIds());
 
         Book book = bookRepository.findById(bookUpdateRequestDto.id())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Book with id %d not found".formatted(bookUpdateRequestDto.id())
                 ));
         Author author = findAuthorById(bookUpdateRequestDto.authorId());
@@ -99,7 +98,7 @@ public class BookServiceImpl implements BookService {
 
     private Author findAuthorById(Long authorId) {
         return authorRepository.findById(authorId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Author with id %d not found".formatted(authorId)
                 ));
     }
@@ -107,7 +106,7 @@ public class BookServiceImpl implements BookService {
     private List<Genre> findGenresByIds(Set<Long> genreIds) {
         List<Genre> genres = genreRepository.findAllByIds(genreIds);
         if (genres == null || genres.size() != genreIds.size()) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "One or all genres with ids %s not found".formatted(genreIds)
             );
         }
