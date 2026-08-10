@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Comment</title>
+    <link rel="icon" href="data:,">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+            min-height: 120px;
+        }
+        textarea:focus {
+            border-color: #2196F3;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+        textarea.error {
+            border-color: #f44336;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .char-count {
+            text-align: right;
+            color: #888;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .char-count.limit {
+            color: #f44336;
+        }
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-primary {
+            background-color: #2196F3;
+        }
+        .btn-primary:hover {
+            background-color: #0b7dda;
+        }
+        .btn-primary:disabled {
+            background-color: #90caf9;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #9e9e9e;
+        }
+        .btn-secondary:hover {
+            background-color: #7a7a7a;
+        }
+        .comment-info {
+            background-color: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+            color: #555;
+        }
+        .comment-info strong {
+            color: #1976D2;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        .loading .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-container {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+            display: none;
+        }
+        .error-container.show {
+            display: block;
+        }
+        .success-message {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2e7d32;
+            display: none;
+        }
+        .success-message.show {
+            display: block;
+        }
+        .not-found {
+            color: #f44336;
+            font-weight: bold;
+            padding: 20px;
+            text-align: center;
+            background-color: #ffebee;
+            border-radius: 4px;
+        }
+        .book-link {
+            color: #1976D2;
+            text-decoration: none;
+        }
+        .book-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Edit Comment</h1>
+
+    <div id="errorMessage" class="error-container"></div>
+    <div id="successMessage" class="success-message"></div>
+
+    <div id="loadingState" class="loading">
+        <div class="spinner"></div>
+        <p>Loading comment...</p>
+    </div>
+
+    <div id="editForm" style="display: none;">
+        <div class="comment-info">
+            <strong>Comment ID:</strong> <span id="commentIdDisplay"></span>
+            <span style="color: #888; margin-left: 10px;">|</span>
+            <strong>Book:</strong>
+            <a href="#" id="bookLink" class="book-link">Loading...</a>
+        </div>
+
+        <form id="commentForm">
+            <div class="form-group">
+                <label for="commentText">Comment:</label>
+                <textarea id="commentText" required placeholder="Enter comment text"></textarea>
+                <div id="textError" class="error-message">Please enter a comment</div>
+                <div class="char-count" id="charCount">0 characters</div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" id="updateBtn" class="btn btn-primary">Update</button>
+                <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="notFoundState" style="display: none;">
+        <p class="not-found">Comment not found</p>
+        <div class="actions">
+            <button type="button" onclick="window.location.href='/books'" class="btn btn-secondary">Back to Books</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = '/api/v1';
+    const COMMENTS_API = `${API_URL}/comments`;
+    const BOOK_API = `${API_URL}/books`;
+
+    const commentId = window.location.pathname.split('/')[2];
+
+    const loadingState = document.getElementById('loadingState');
+    const editForm = document.getElementById('editForm');
+    const notFoundState = document.getElementById('notFoundState');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const commentIdDisplay = document.getElementById('commentIdDisplay');
+    const commentText = document.getElementById('commentText');
+    const textError = document.getElementById('textError');
+    const charCount = document.getElementById('charCount');
+    const updateBtn = document.getElementById('updateBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const bookLink = document.getElementById('bookLink');
+
+    let currentComment = null;
+    let currentBookId = null;
+    let maxLength = 1000;
+
+    document.addEventListener('DOMContentLoaded', loadComment);
+
+    async function loadComment() {
+        try {
+            const response = await fetch(`${COMMENTS_API}/${commentId}`);
+
+            if (response.status === 404) {
+                loadingState.style.display = 'none';
+                notFoundState.style.display = 'block';
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const comment = await response.json();
+            currentComment = comment;
+            currentBookId = comment.book.id;
+
+            await loadBookInfo(currentBookId);
+
+            commentIdDisplay.textContent = comment.id;
+            commentText.value = comment.text;
+
+            updateCharCount(comment.text);
+
+            loadingState.style.display = 'none';
+            editForm.style.display = 'block';
+
+        } catch (error) {
+            showError('Error loading comment: ' + error.message);
+            loadingState.style.display = 'none';
+            notFoundState.style.display = 'block';
+        }
+    }
+
+    async function loadBookInfo(bookId) {
+        try {
+            const response = await fetch(`${BOOK_API}/${bookId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const book = await response.json();
+
+            bookLink.textContent = `"${book.title}"`;
+            bookLink.href = `/books/${book.id}`;
+
+            cancelBtn.onclick = () => {
+                window.location.href = `/comments/book/${bookId}`;
+            };
+
+        } catch (error) {
+            bookLink.textContent = 'Error loading book';
+            console.error('Error loading book:', error);
+        }
+    }
+
+    function updateCharCount(text) {
+        const length = text.length;
+        charCount.textContent = `${length} characters`;
+
+        if (length > maxLength) {
+            charCount.className = 'char-count limit';
+        } else {
+            charCount.className = 'char-count';
+        }
+    }
+
+    commentText.addEventListener('input', function() {
+        const length = this.value.length;
+
+        if (length > maxLength) {
+            charCount.className = 'char-count limit';
+            this.value = this.value.substring(0, maxLength);
+            charCount.textContent = `${maxLength} characters (maximum)`;
+        } else {
+            charCount.className = 'char-count';
+            charCount.textContent = `${length} characters`;
+        }
+
+        if (this.value.trim()) {
+            this.classList.remove('error');
+            textError.classList.remove('show');
+        }
+    });
+
+    commentText.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+            this.classList.add('error');
+            textError.classList.add('show');
+        } else {
+            this.classList.remove('error');
+            textError.classList.remove('show');
+        }
+    });
+
+    document.getElementById('commentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const text = commentText.value.trim();
+        if (!text) {
+            commentText.classList.add('error');
+            textError.classList.add('show');
+            commentText.focus();
+            return;
+        }
+        commentText.classList.remove('error');
+        textError.classList.remove('show');
+
+        updateBtn.disabled = true;
+        updateBtn.textContent = 'Saving...';
+
+        errorMessage.className = 'error-container';
+        successMessage.className = 'success-message';
+
+        const commentData = {
+            id: Number(commentId),
+            text: text,
+            book: {
+                id: currentBookId
+            }
+        };
+
+        try {
+            const response = await fetch(`${COMMENTS_API}/${commentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(commentData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const updatedComment = await response.json();
+
+            showSuccess('Comment updated successfully!');
+
+            commentText.value = updatedComment.text;
+            updateCharCount(updatedComment.text);
+
+            setTimeout(() => {
+                window.location.href = `/comments/book/${currentBookId}`;
+            }, 1500);
+
+        } catch (error) {
+            showError('Error updating comment: ' + error.message);
+            updateBtn.disabled = false;
+            updateBtn.textContent = 'Update';
+        }
+    });
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.className = 'error-container show';
+        successMessage.className = 'success-message';
+        setTimeout(() => {
+            errorMessage.className = 'error-container';
+        }, 5000);
+    }
+
+    function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.className = 'success-message show';
+        errorMessage.className = 'error-container';
+        setTimeout(() => {
+            successMessage.className = 'success-message';
+        }, 3000);
+    }
+</script>
+</body>
+</html>

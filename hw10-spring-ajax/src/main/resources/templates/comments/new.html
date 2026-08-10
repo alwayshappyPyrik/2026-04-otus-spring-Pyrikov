@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Comment</title>
+    <link rel="icon" href="data:,">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #9C27B0;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .book-info {
+            background-color: #f3e5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #9C27B0;
+        }
+        .book-info strong {
+            color: #7B1FA2;
+        }
+        .book-info .loading-text {
+            color: #888;
+            font-style: italic;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+            min-height: 120px;
+        }
+        textarea:focus {
+            border-color: #9C27B0;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
+        }
+        textarea.error {
+            border-color: #f44336;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-primary {
+            background-color: #9C27B0;
+        }
+        .btn-primary:hover {
+            background-color: #7B1FA2;
+        }
+        .btn-primary:disabled {
+            background-color: #ce93d8;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #9e9e9e;
+        }
+        .btn-secondary:hover {
+            background-color: #7a7a7a;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+        .loading .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #9C27B0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-container {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+            display: none;
+        }
+        .error-container.show {
+            display: block;
+        }
+        .success-message {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2e7d32;
+            display: none;
+        }
+        .success-message.show {
+            display: block;
+        }
+        .char-count {
+            text-align: right;
+            color: #888;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .char-count.limit {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Add Comment</h1>
+
+    <div id="errorMessage" class="error-container"></div>
+    <div id="successMessage" class="success-message"></div>
+
+    <div class="book-info" id="bookInfo">
+        <strong>ID:</strong> <span id="bookId">-</span>
+        <span style="color: #888; margin-left: 10px;">|</span>
+        <strong>Book:</strong> <span id="bookTitle" class="loading-text">Loading...</span>
+    </div>
+
+    <form id="commentForm">
+        <div class="form-group">
+            <label for="commentText">Comment:</label>
+            <textarea id="commentText" required placeholder="Enter your comment..."></textarea>
+            <div id="textError" class="error-message">Please enter a comment</div>
+            <div class="char-count" id="charCount">0 characters</div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" id="saveBtn" class="btn btn-primary">Save</button>
+            <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
+        </div>
+    </form>
+
+    <div id="loadingState" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Saving comment...</p>
+    </div>
+</div>
+
+<script>
+    const API_URL = '/api/v1';
+    const BOOK_API = `${API_URL}/books`;
+    const COMMENTS_API = `${API_URL}/comments`;
+
+    const bookId = window.location.pathname.split('/')[3]; // /comments/book/1/new
+
+    const bookIdEl = document.getElementById('bookId');
+    const bookTitleEl = document.getElementById('bookTitle');
+    const commentText = document.getElementById('commentText');
+    const textError = document.getElementById('textError');
+    const charCount = document.getElementById('charCount');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const loadingState = document.getElementById('loadingState');
+
+    let maxLength = 1000;
+
+    document.addEventListener('DOMContentLoaded', loadBookInfo);
+
+    async function loadBookInfo() {
+        try {
+            const response = await fetch(`${BOOK_API}/${bookId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const book = await response.json();
+
+            bookIdEl.textContent = book.id;
+            bookTitleEl.textContent = book.title;
+            bookTitleEl.className = '';
+
+            cancelBtn.onclick = () => {
+                window.location.href = `/comments/book/${bookId}`;
+            };
+
+        } catch (error) {
+            bookTitleEl.textContent = 'Error loading';
+            bookTitleEl.className = 'loading-text';
+            showError('Error loading book information: ' + error.message);
+        }
+    }
+
+    commentText.addEventListener('input', function() {
+        const length = this.value.length;
+        charCount.textContent = `${length} characters`;
+
+        if (length > maxLength) {
+            charCount.className = 'char-count limit';
+            this.value = this.value.substring(0, maxLength);
+            charCount.textContent = `${maxLength} characters (maximum)`;
+        } else {
+            charCount.className = 'char-count';
+        }
+
+        if (this.value.trim()) {
+            this.classList.remove('error');
+            textError.classList.remove('show');
+        }
+    });
+
+    commentText.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+            this.classList.add('error');
+            textError.classList.add('show');
+        } else {
+            this.classList.remove('error');
+            textError.classList.remove('show');
+        }
+    });
+
+    document.getElementById('commentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const text = commentText.value.trim();
+        if (!text) {
+            commentText.classList.add('error');
+            textError.classList.add('show');
+            commentText.focus();
+            return;
+        }
+        commentText.classList.remove('error');
+        textError.classList.remove('show');
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        loadingState.style.display = 'block';
+
+        errorMessage.className = 'error-container';
+        successMessage.className = 'success-message';
+
+        const commentData = {
+            text: text,
+            book: {
+                id: Number(bookId)
+            }
+        };
+
+        try {
+            const response = await fetch(`${COMMENTS_API}/book/${bookId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(commentData)
+            });
+
+            if (!response.ok) {
+                let errorMsg = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.message || errorMsg;
+                } catch (e) {
+                    console.warn('Failed to parse error response:', e);
+                }
+                throw new Error(errorMsg);
+            }
+
+            const createdComment = await response.json();
+
+            showSuccess('Comment created successfully!');
+
+            commentText.value = '';
+            charCount.textContent = '0 characters';
+
+            setTimeout(() => {
+                window.location.href = `/comments/book/${bookId}`;
+            }, 1500);
+
+        } catch (error) {
+            showError('Error creating comment: ' + error.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+            loadingState.style.display = 'none';
+        }
+    });
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.className = 'error-container show';
+        successMessage.className = 'success-message';
+        setTimeout(() => {
+            errorMessage.className = 'error-container';
+        }, 5000);
+    }
+
+    function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.className = 'success-message show';
+        errorMessage.className = 'error-container';
+        setTimeout(() => {
+            successMessage.className = 'success-message';
+        }, 3000);
+    }
+</script>
+</body>
+</html>

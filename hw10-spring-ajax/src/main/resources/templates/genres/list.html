@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Genres</title>
+    <link rel="icon" href="data:,">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #FF9800;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .header-actions {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .search-box input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 250px;
+            transition: border-color 0.3s;
+        }
+        .search-box input[type="text"]:focus {
+            border-color: #FF9800;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-primary {
+            background-color: #FF9800;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #F57C00;
+        }
+        .btn-clear {
+            background-color: #607d8b;
+            color: white;
+        }
+        .btn-clear:hover {
+            background-color: #455a64;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        .empty-state p {
+            font-size: 16px;
+            margin: 0;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .message.show {
+            display: block;
+        }
+        .message.success {
+            background-color: #e8f5e9;
+            border: 1px solid #4CAF50;
+            color: #2e7d32;
+        }
+        .message.error {
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+        .hidden {
+            display: none !important;
+        }
+        .genre-tag {
+            display: inline-block;
+            background-color: #fff3e0;
+            color: #e65100;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            margin: 2px;
+        }
+        .search-info {
+            color: #666;
+            font-size: 14px;
+            padding: 8px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>All Genres</h1>
+
+    <div id="successMessage" class="message success"></div>
+    <div id="errorMessage" class="message error"></div>
+
+    <div class="header-actions">
+        <div class="search-box">
+            <label for="searchInput"></label><input type="text" id="searchInput" placeholder="Enter genre IDs (e.g. 1,2,3)" />
+            <button onclick="searchGenres()" class="btn btn-primary">Search</button>
+            <button onclick="clearSearch()" class="btn btn-clear">Clear</button>
+        </div>
+    </div>
+
+    <div id="searchInfo" class="search-info hidden"></div>
+
+    <div id="loadingIndicator" class="loading">Loading genres...</div>
+
+    <div id="genresContainer" class="hidden">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="genresTableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+        <p>No genres found</p>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = '/api/v1/genres';
+    let currentSearchIds = '';
+
+    document.addEventListener('DOMContentLoaded', loadGenres);
+
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchGenres();
+        }
+    });
+
+    async function loadGenres() {
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const genresContainer = document.getElementById('genresContainer');
+        const emptyState = document.getElementById('emptyState');
+        const searchInfo = document.getElementById('searchInfo');
+
+        loadingIndicator.classList.remove('hidden');
+        genresContainer.classList.add('hidden');
+        emptyState.classList.add('hidden');
+        searchInfo.classList.add('hidden');
+        hideMessages();
+
+        try {
+            const url = currentSearchIds ? `${API_BASE_URL}/search?ids=${currentSearchIds}` : API_BASE_URL;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const genres = await response.json();
+
+            loadingIndicator.classList.add('hidden');
+
+            if (currentSearchIds) {
+                searchInfo.textContent = `Showing genres with IDs: ${currentSearchIds}`;
+                searchInfo.classList.remove('hidden');
+            }
+
+            if (genres.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                renderGenres(genres);
+                genresContainer.classList.remove('hidden');
+            }
+
+        } catch (error) {
+            console.error('Error loading genres:', error);
+            loadingIndicator.classList.add('hidden');
+            showError('Failed to load genres: ' + error.message);
+        }
+    }
+
+    function renderGenres(genres) {
+        const tbody = document.getElementById('genresTableBody');
+
+        tbody.innerHTML = genres.map(genre => `
+            <tr>
+                <td>${escapeHtml(String(genre.id))}</td>
+                <td><span class="genre-tag">${escapeHtml(genre.name)}</span></td>
+                <td>
+                    <button onclick="viewGenreBooks(${genre.id})" class="btn btn-primary" style="padding: 4px 12px; font-size: 12px;">
+                        View Books
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function searchGenres() {
+        const searchInput = document.getElementById('searchInput');
+        const ids = searchInput.value.trim();
+
+        if (!ids) {
+            clearSearch();
+            return;
+        }
+
+        const isValid = ids.split(',').every(id => {
+            const trimmed = id.trim();
+            return trimmed && !isNaN(trimmed) && Number.isInteger(Number(trimmed));
+        });
+
+        if (!isValid) {
+            showError('Please enter valid genre IDs separated by commas (e.g. 1,2,3)');
+            return;
+        }
+
+        currentSearchIds = ids;
+        loadGenres();
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        currentSearchIds = '';
+        loadGenres();
+    }
+
+    function viewGenreBooks(genreId) {
+        window.location.href = `/books?genreId=${genreId}`;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function hideMessages() {
+        const successMsg = document.getElementById('successMessage');
+        const errorMsg = document.getElementById('errorMessage');
+        successMsg.classList.remove('show');
+        successMsg.textContent = '';
+        errorMsg.classList.remove('show');
+        errorMsg.textContent = '';
+    }
+
+    function showError(message) {
+        const errorMsg = document.getElementById('errorMessage');
+        errorMsg.textContent = message;
+        errorMsg.classList.add('show');
+        setTimeout(() => {
+            errorMsg.classList.remove('show');
+        }, 5000);
+    }
+</script>
+</body>
+</html>

@@ -9,14 +9,12 @@ import lombok.Builder;
 import java.util.Set;
 
 @Builder(toBuilder = true)
-public record BookUpdateRequestDto(
-        @NotNull
-        Long id,
-
+public record BookCreateRequestDto(
         @NotBlank(message = "Название книги обязательно")
         @Size(min = 1, max = 255, message = "Название должно быть от 1 до 255 символов")
         String title,
 
+        @NotNull(message = "ID автора обязателен")
         Long authorId,
 
         @NotEmpty(message = "Должен быть выбран хотя бы один жанр")
