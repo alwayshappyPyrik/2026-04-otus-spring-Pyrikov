@@ -23,6 +23,7 @@
         <module>hw08-mongo-db</module>
         <module>hw09-spring-view</module>
         <module>hw10-spring-ajax</module>
+        <module>hw11-spring-flux</module>
     </modules>
 
     <properties>
