@@ -1,6 +1,7 @@
 package ru.otus.hw.dto;
 
 import lombok.Builder;
+import ru.otus.hw.models.Book;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -12,17 +13,17 @@ public record BookResponseDto(
         AuthorResponseDto author,
         Set<GenreResponseDto> genres
 ) {
-    @Override
-    public String toString() {
-        var genresString = genres.stream()
-                .map(GenreResponseDto::toString)
-                .collect(Collectors.joining(","));
-
-        return "Id: %d, title: %s, author: {%s}, genres: [%s]".formatted(
-                id,
-                title,
-                author,
-                genresString
+    public static BookResponseDto fromBook(Book book) {
+        return new BookResponseDto(
+                book.getId(),
+                book.getTitle(),
+                new AuthorResponseDto(
+                        book.getAuthorId(),
+                        book.getAuthorFullName()
+                ),
+                book.getGenres().stream()
+                        .map(g -> new GenreResponseDto(g.getId(), g.getName()))
+                        .collect(Collectors.toSet())
         );
     }
 }
