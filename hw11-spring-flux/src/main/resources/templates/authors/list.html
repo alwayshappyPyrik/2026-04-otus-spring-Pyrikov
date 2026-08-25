@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Authors</title>
+    <link rel="icon" href="data:,">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .header-actions {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-books {
+            background-color: #2196F3;
+        }
+        .btn-books:hover {
+            background-color: #0b7dda;
+        }
+        .btn-view {
+            background-color: #9e9e9e;
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            color: white;
+        }
+        .btn-view:hover {
+            background-color: #7a7a7a;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        .empty-state p {
+            font-size: 16px;
+            margin: 0;
+        }
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #d32f2f;
+        }
+        .error-state p {
+            font-size: 16px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>All Authors</h1>
+
+    <div class="header-actions">
+        <button onclick="window.location.href='/books'" class="btn btn-books">Go to Books</button>
+    </div>
+
+    <div id="loadingState" class="loading">Loading authors</div>
+    <div id="contentState" style="display: none;"></div>
+</div>
+
+<script>
+    async function loadAuthors() {
+        const loadingState = document.getElementById('loadingState');
+        const contentState = document.getElementById('contentState');
+
+        try {
+            loadingState.style.display = 'block';
+            contentState.style.display = 'none';
+
+            const response = await fetch('/api/v1/authors');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const authors = await response.json();
+
+            loadingState.style.display = 'none';
+            renderAuthors(authors, contentState);
+
+        } catch (error) {
+            console.error('Error loading authors:', error);
+            loadingState.style.display = 'none';
+            contentState.style.display = 'block';
+            contentState.innerHTML = `
+                <div class="error-state">
+                    <p>Failed to load authors: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    function renderAuthors(authors, container) {
+        if (!authors || authors.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>No authors found</p>
+                </div>
+            `;
+            container.style.display = 'block';
+            return;
+        }
+
+        let tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Full Name</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        authors.forEach(author => {
+            tableHtml += `
+                <tr>
+                    <td>${author.id}</td>
+                    <td>${escapeHtml(author.fullName)}</td>
+                    <td>
+                        <button onclick="viewAuthor(${author.id})" class="btn-view">View</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `
+                </tbody>
+            </table>
+        `;
+
+        container.innerHTML = tableHtml;
+        container.style.display = 'block';
+    }
+
+    function viewAuthor(id) {
+        window.location.href = `/authors/${id}`;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAuthors);
+</script>
+</body>
+</html>

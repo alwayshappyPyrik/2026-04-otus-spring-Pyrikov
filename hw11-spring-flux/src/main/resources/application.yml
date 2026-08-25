@@ -1,0 +1,23 @@
+spring:
+
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    pool:
+      enabled: true
+      initial-size: 10
+      max-size: 20
+
+  flyway:
+    enabled: true
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    user: sa
+    password:
+    locations: classpath:db/migration
+    encoding: UTF-8
+
+  mvc:
+    hidden method:
+      filter:
+        enabled: true
