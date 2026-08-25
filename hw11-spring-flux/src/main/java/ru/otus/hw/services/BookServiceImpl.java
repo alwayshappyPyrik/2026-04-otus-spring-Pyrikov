@@ -51,11 +51,27 @@ public class BookServiceImpl implements BookService {
     }
 
     public Mono<BookResponseDto> update(BookUpdateRequestDto request) {
-        return bookRepository.findById(request.id())
-                .switchIfEmpty(Mono.error(new RuntimeException("Book not found with id: " + request.id())))
-                .flatMap(book -> updateBook(book, request))
-                .flatMap(bookRepository::save)
-                .map(BookResponseDto::fromBook);
+        return Mono.zip(
+                bookRepository.findById(request.id())
+                        .switchIfEmpty(Mono.error(new RuntimeException("Book not found with id: " + request.id()))),
+                getAuthor(request.authorId()),
+                getGenres(request.genreIds())
+        ).flatMap(tuple -> {
+            Book existingBook = tuple.getT1();
+            Author author = tuple.getT2();
+            List<Genre> genres = tuple.getT3();
+
+            existingBook.setTitle(request.title());
+            existingBook.setAuthorId(author.getId());
+            existingBook.setAuthorFullName(author.getFullName());
+
+            Set<GenreEmbedded> genreEmbeddedSet = genres.stream()
+                    .map(genre -> new GenreEmbedded(genre.getId(), genre.getName()))
+                    .collect(Collectors.toSet());
+            existingBook.setGenres(genreEmbeddedSet);
+
+            return bookRepository.save(existingBook);
+        }).map(BookResponseDto::fromBook);
     }
 
     public Mono<Void> deleteById(BookRequestDto request) {
