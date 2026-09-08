@@ -116,10 +116,15 @@
         </table>
 
         <div class="actions">
-            <button th:onclick="'window.location.href=\'/comments/\' + ' + *{id} + '/edit?bookId=' + (*{book} != null ? *{book.id} : '')"
+            <button th:data-comment-id="${comment.id}"
+                    th:data-book-id="${comment.book.id}"
+                    onclick="window.location.href='/comments/' + this.dataset.commentId + '/edit?bookId=' + this.dataset.bookId"
                     class="btn btn-edit">Edit</button>
-            <button th:onclick="'window.location.href=\'/comments/book/\' + ' + (*{book} != null ? *{book.id} : '')"
+
+            <button th:data-book-id="${comment.book.id}"
+                    onclick="window.location.href='/comments/book/' + this.dataset.bookId"
                     class="btn btn-comments">Back to Comments</button>
+
             <button onclick="window.location.href='/books'" class="btn btn-back">Go to Books</button>
         </div>
     </div>

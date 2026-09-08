@@ -12,6 +12,7 @@ public record BookResponseDto(
         AuthorResponseDto author,
         Set<GenreResponseDto> genres
 ) {
+
     @Override
     public String toString() {
         var genresString = genres.stream()
