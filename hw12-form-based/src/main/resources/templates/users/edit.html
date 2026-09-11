@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User</title>
+    <link rel="icon" href="data:,">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            background-color: white;
+        }
+        select:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        .help-text {
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #888;
+        }
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+        }
+        .btn-primary:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #9e9e9e;
+        }
+        .btn-secondary:hover {
+            background-color: #7a7a7a;
+        }
+        .error {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 5px;
+            display: block;
+        }
+        .error-messages {
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            color: #f44336;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .error-messages ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .status-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .status-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .status-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        .password-requirements {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #555;
+        }
+        .password-requirements ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Edit User</h1>
+
+    <div th:if="${errors != null and !errors.isEmpty()}" class="error-messages">
+        <ul>
+            <li th:each="error : ${errors}" th:text="${error}"></li>
+        </ul>
+    </div>
+
+    <form th:action="@{/users/{id}(id=*{id})}" th:object="${user}" method="post">
+        <input type="hidden" name="_method" value="PUT">
+
+        <div class="form-group">
+            <label>Login:</label>
+            <input type="text" th:field="*{login}" required placeholder="Введите логин (3-50 символов)">
+            <span class="help-text">Логин должен быть уникальным и содержать от 3 до 50 символов</span>
+            <span th:errors="*{login}" class="error"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" th:field="*{email}" required placeholder="Введите эмайл адрес">
+            <span class="help-text">Емайл должен быть уникальным и в валидном формате</span>
+            <span th:errors="*{email}" class="error"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" th:field="*{password}" placeholder="Оставьте поле пустым, чтобы сохранить текущий пароль">
+            <div class="password-requirements">
+                <strong>Требования к паролю:</strong>
+                <ul>
+                    <li>Минимум 6 символов</li>
+                    <li>Не менее одной заглавной буквы</li>
+                    <li>Не менее одной цифры</li>
+                </ul>
+            </div>
+            <span th:errors="*{password}" class="error"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Status:</label>
+            <div class="status-group">
+                <input type="checkbox" th:field="*{enabled}" th:checked="*{enabled}">
+                <label>Активный</label>
+            </div>
+            <span class="help-text">Uncheck to disable this user account</span>
+            <span th:errors="*{enabled}" class="error"></span>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a th:href="@{/users}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+</body>
+</html>
